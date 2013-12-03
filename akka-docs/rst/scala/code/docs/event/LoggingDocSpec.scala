@@ -22,8 +22,8 @@ object LoggingDocSpec {
         reason.getMessage, message.getOrElse(""))
     }
     def receive = {
-      case "test" ⇒ log.info("Received test")
-      case x      ⇒ log.warning("Received unknown message: {}", x)
+      case "test" => log.info("Received test")
+      case x      => log.warning("Received unknown message: {}", x)
     }
   }
   //#my-actor
@@ -85,11 +85,11 @@ object LoggingDocSpec {
 
   class MyEventListener extends Actor {
     def receive = {
-      case InitializeLogger(_)                        ⇒ sender ! LoggerInitialized
-      case Error(cause, logSource, logClass, message) ⇒ // ...
-      case Warning(logSource, logClass, message)      ⇒ // ...
-      case Info(logSource, logClass, message)         ⇒ // ...
-      case Debug(logSource, logClass, message)        ⇒ // ...
+      case InitializeLogger(_)                        => sender ! LoggerInitialized
+      case Error(cause, logSource, logClass, message) => // ...
+      case Warning(logSource, logClass, message)      => // ...
+      case Info(logSource, logClass, message)         => // ...
+      case Debug(logSource, logClass, message)        => // ...
     }
   }
   //#my-event-listener
@@ -140,7 +140,7 @@ class LoggingDocSpec extends AkkaSpec {
 
       class Listener extends Actor {
         def receive = {
-          case d: DeadLetter ⇒ println(d)
+          case d: DeadLetter => println(d)
         }
       }
       val listener = system.actorOf(Props(classOf[Listener], this))

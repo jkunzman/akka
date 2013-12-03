@@ -116,7 +116,7 @@ class MyJournal extends AsyncWriteJournal {
   def writeAsync(persistentBatch: Seq[PersistentRepr]): Future[Unit] = ???
   def deleteAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
   def confirmAsync(processorId: String, sequenceNr: Long, channelId: String): Future[Unit] = ???
-  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Long] = ???
+  def replayAsync(processorId: String, fromSequenceNr: Long, toSequenceNr: Long)(replayCallback: (PersistentRepr) => Unit): Future[Long] = ???
 }
 
 class MySnapshotStore extends SnapshotStore {

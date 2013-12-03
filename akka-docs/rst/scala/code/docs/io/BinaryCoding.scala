@@ -13,9 +13,9 @@ abstract class BinaryDecoding {
   implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
 
   val FrameDecoder = for {
-    frameLenBytes ← IO.take(4)
+    frameLenBytes <- IO.take(4)
     frameLen = frameLenBytes.iterator.getInt
-    frame ← IO.take(frameLen)
+    frame <- IO.take(frameLen)
   } yield {
     val in = frame.iterator
 
@@ -25,7 +25,7 @@ abstract class BinaryDecoding {
     val a = Array.newBuilder[Short]
     val b = Array.newBuilder[Long]
 
-    for (i ← 1 to n) {
+    for (i <- 1 to n) {
       a += in.getShort
       b += in.getInt
     }
@@ -68,7 +68,7 @@ abstract class BinaryEncoding {
   frameBuilder.putInt(n)
   frameBuilder.putInt(m)
 
-  for (i ← 0 to n - 1) {
+  for (i <- 0 to n - 1) {
     frameBuilder.putShort(a(i))
     frameBuilder.putLong(b(i))
   }
