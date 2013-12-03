@@ -26,22 +26,22 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
         regionC -> Vector.empty)
 
       // so far regionB has 2 shards and regionC has 0 shards, but the diff is less than rebalanceThreshold  
-      allocationStrategy.rebalance(allocations, Set.empty) must be(None)
+      allocationStrategy.rebalance(allocations, Set.empty) must be(Set.empty)
 
       val allocations2 = allocations.updated(regionB, Vector("shard2", "shard3", "shard4"))
-      allocationStrategy.rebalance(allocations2, Set.empty) must be(Some("shard4"))
-      allocationStrategy.rebalance(allocations2, Set("shard4")) must be(None)
+      allocationStrategy.rebalance(allocations2, Set.empty) must be(Set("shard2"))
+      allocationStrategy.rebalance(allocations2, Set("shard4")) must be(Set.empty)
 
       val allocations3 = allocations2.updated(regionA, Vector("shard1", "shard5", "shard6"))
-      allocationStrategy.rebalance(allocations3, Set("shard6")) must be(Some("shard4"))
+      allocationStrategy.rebalance(allocations3, Set("shard1")) must be(Set("shard2"))
     }
 
     "must limit number of simultanious rebalance" in {
       val allocations = Map(regionA -> Vector("shard1"),
         regionB -> Vector("shard2", "shard3", "shard4", "shard5", "shard6"), regionC -> Vector.empty)
 
-      allocationStrategy.rebalance(allocations, Set("shard6")) must be(Some("shard5"))
-      allocationStrategy.rebalance(allocations, Set("shard5", "shard6")) must be(None)
+      allocationStrategy.rebalance(allocations, Set("shard2")) must be(Set("shard3"))
+      allocationStrategy.rebalance(allocations, Set("shard2", "shard3")) must be(Set.empty)
     }
   }
 }

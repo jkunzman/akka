@@ -24,6 +24,8 @@ import akka.testkit._
 import akka.testkit.TestEvent.Mute
 import java.io.File
 import org.apache.commons.io.FileUtils
+import akka.actor.ReceiveTimeout
+import akka.actor.ActorRef
 
 object ClusterShardingSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -62,24 +64,32 @@ object ClusterShardingSpec extends MultiNodeConfig {
     ConfigFactory.parseString("""akka.cluster.roles = ["frontend"]""")
   }
 
+  //#counter-actor
   case object Increment
   case object Decrement
   case class Get(counterId: Long)
-  case object Idle
+  case class EntryEnvelope(id: Long, payload: Any)
+
   case object Stop
   case class CounterChanged(delta: Int)
+
   class Counter extends EventsourcedProcessor {
     import ShardRegion.Passivate
 
+    //FIXME this will not be needed when default processorId is changed
     override def processorId = self.path.elements.mkString("/", "/", "")
 
+    context.setReceiveTimeout(120.seconds)
+
     var count = 0
+    //#counter-actor
 
     override def postStop(): Unit = {
       super.postStop()
       // Simulate that the passivation takes some time, to verify passivation bufffering
       Thread.sleep(500)
     }
+    //#counter-actor
 
     def updateState(event: CounterChanged): Unit =
       count += event.delta
@@ -89,16 +99,16 @@ object ClusterShardingSpec extends MultiNodeConfig {
     }
 
     override def receiveCommand: Receive = {
-      case Increment ⇒ persist(CounterChanged(+1))(updateState)
-      case Decrement ⇒ persist(CounterChanged(-1))(updateState)
-      case Get(_)    ⇒ sender ! count
-      case Idle      ⇒ context.parent ! Passivate(stopMessage = Stop)
-      case Stop      ⇒ context.stop(self)
+      case Increment      ⇒ persist(CounterChanged(+1))(updateState)
+      case Decrement      ⇒ persist(CounterChanged(-1))(updateState)
+      case Get(_)         ⇒ sender ! count
+      case ReceiveTimeout ⇒ context.parent ! Passivate(stopMessage = Stop)
+      case Stop           ⇒ context.stop(self)
     }
   }
+  //#counter-actor
 
-  case class EntryEnvelope(id: Long, payload: Any)
-
+  //#counter-extractor
   val idExtractor: ShardRegion.IdExtractor = {
     case EntryEnvelope(id, payload) ⇒ (id.toString, payload)
     case msg @ Get(id)              ⇒ (id.toString, msg)
@@ -108,6 +118,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
     case EntryEnvelope(id, _) ⇒ (id % 10).toString
     case Get(id)              ⇒ (id % 10).toString
   }
+  //#counter-extractor
 
 }
 
@@ -130,11 +141,15 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
     "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
 
   override protected def atStartup() {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
+    runOn(controller) {
+      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
+    }
   }
 
   override protected def afterTermination() {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
+    runOn(controller) {
+      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
+    }
   }
 
   def join(from: RoleName, to: RoleName): Unit = {
@@ -148,7 +163,8 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
   def createCoordinator(): Unit = {
     val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
     system.actorOf(ClusterSingletonManager.props(
-      singletonProps = ShardCoordinator.props(handOffTimeout = 10.second, rebalanceInterval = 2.seconds, allocationStrategy),
+      singletonProps = ShardCoordinator.props(handOffTimeout = 10.second, rebalanceInterval = 2.seconds,
+        snapshotInterval = 3600.seconds, allocationStrategy),
       singletonName = "singleton",
       terminationMessage = PoisonPill,
       role = None),
@@ -232,7 +248,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       runOn(second) {
         region ! Get(2)
         expectMsg(3)
-        region ! EntryEnvelope(2, Idle)
+        region ! EntryEnvelope(2, ReceiveTimeout)
         // let the Passivate-Stop roundtrip begin to trigger buffering of subsequent messages
         Thread.sleep(200)
         region ! EntryEnvelope(2, Increment)
@@ -412,11 +428,13 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
 
   "easy to use with extensions" in within(50.seconds) {
     runOn(third, fourth, fifth, sixth) {
+      //#counter-start
       ClusterSharding(system).start(
         typeName = "Counter",
         entryProps = Some(Props[Counter]),
         idExtractor = idExtractor,
         shardResolver = shardResolver)
+      //#counter-start  
       ClusterSharding(system).start(
         typeName = "AnotherCounter",
         entryProps = Some(Props[Counter]),
@@ -425,12 +443,17 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
     }
     enterBarrier("extension-started")
     runOn(fifth) {
-      ClusterSharding(system).shardRegion("Counter") ! EntryEnvelope(100, Increment)
-      ClusterSharding(system).shardRegion("AnotherCounter") ! EntryEnvelope(100, Decrement)
+      //#counter-usage
+      val counterRegion: ActorRef = ClusterSharding(system).shardRegion("Counter")
+      counterRegion ! Get(100)
+      expectMsg(0)
 
-      ClusterSharding(system).shardRegion("Counter") ! Get(100)
+      counterRegion ! EntryEnvelope(100, Increment)
+      counterRegion ! Get(100)
       expectMsg(1)
+      //#counter-usage
 
+      ClusterSharding(system).shardRegion("AnotherCounter") ! EntryEnvelope(100, Decrement)
       ClusterSharding(system).shardRegion("AnotherCounter") ! Get(100)
       expectMsg(-1)
     }
