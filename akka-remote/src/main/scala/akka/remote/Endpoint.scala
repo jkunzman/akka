@@ -33,6 +33,7 @@ private[remote] trait InboundMessageDispatcher {
   def dispatch(recipient: InternalActorRef,
                recipientAddress: Address,
                serializedMessage: SerializedMessage,
+               serializedContext: ByteString,
                senderOption: Option[ActorRef]): Unit
 }
 
@@ -48,6 +49,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
   override def dispatch(recipient: InternalActorRef,
                         recipientAddress: Address,
                         serializedMessage: SerializedMessage,
+                        serializedContext: ByteString,
                         senderOption: Option[ActorRef]): Unit = {
 
     import provider.remoteSettings._
@@ -58,6 +60,8 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
     val originalReceiver = recipient.path
 
     def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender]"
+
+    system.tracer.remoteMessageReceived(recipient, payload, serializedMessage.getSerializedSize, sender, serializedContext)
 
     recipient match {
 
@@ -99,6 +103,8 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
         payloadClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
 
     }
+
+    system.tracer.remoteMessageCompleted(recipient, payload, serializedMessage.getSerializedSize, sender)
   }
 
 }
@@ -327,11 +333,11 @@ private[remote] class ReliableDeliverySupervisor(
         // Resending will be triggered by the incoming GotUid message after the connection finished
         context.become(receive)
       } else context.become(idle)
-    case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
-    case s: Send                               ⇒ context.system.deadLetters ! s
-    case EndpointWriter.FlushAndStop           ⇒ context.stop(self)
-    case EndpointWriter.StopReading(w)         ⇒ sender ! EndpointWriter.StoppedReading(w)
-    case _                                     ⇒ // Ignore
+    case s @ Send(msg: SystemMessage, _, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
+    case s: Send                                  ⇒ context.system.deadLetters ! s
+    case EndpointWriter.FlushAndStop              ⇒ context.stop(self)
+    case EndpointWriter.StopReading(w)            ⇒ sender ! EndpointWriter.StoppedReading(w)
+    case _                                        ⇒ // Ignore
   }
 
   def idle: Receive = {
@@ -539,7 +545,7 @@ private[remote] class EndpointWriter(
   }
 
   when(Initializing) {
-    case Event(Send(msg, senderOption, recipient, _), _) ⇒
+    case Event(Send(msg, senderOption, recipient, traceContext, _), _) ⇒
       stash()
       stay()
     case Event(Status.Failure(e: InvalidAssociationException), _) ⇒
@@ -568,20 +574,27 @@ private[remote] class EndpointWriter(
   }
 
   when(Writing) {
-    case Event(s @ Send(msg, senderOption, recipient, seqOption), _) ⇒
+    case Event(s @ Send(msg, senderOption, recipient, traceContext, seqOption), _) ⇒
       try {
         handle match {
           case Some(h) ⇒
+            val sender = senderOption.getOrElse(extendedSystem.deadLetters)
+
             if (provider.remoteSettings.LogSend) {
-              def msgLog = s"RemoteMessage: [$msg] to [$recipient]<+[${recipient.path}] from [${senderOption.getOrElse(extendedSystem.deadLetters)}]"
+              def msgLog = s"RemoteMessage: [$msg] to [$recipient]<+[${recipient.path}] from [$sender]"
               log.debug("sending message {}", msgLog)
             }
+
+            val serializedMessage = serializeMessage(msg)
+            val msgSize = serializedMessage.getSerializedSize
+            val serializedContext = extendedSystem.tracer.remoteMessageSent(recipient, msg, msgSize, sender, traceContext)
 
             val pdu = codec.constructMessage(
               recipient.localAddressToUse,
               recipient,
-              serializeMessage(msg),
+              serializedMessage,
               senderOption,
+              serializedContext,
               seqOption = seqOption,
               ackOption = lastAck)
 
@@ -791,7 +804,7 @@ private[remote] class EndpointReader(
           if (msg.reliableDeliveryEnabled) {
             ackedReceiveBuffer = ackedReceiveBuffer.receive(msg)
             deliverAndAck()
-          } else msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
+          } else msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.serializedContext, msg.senderOption)
 
         case None ⇒
       }
@@ -844,7 +857,7 @@ private[remote] class EndpointReader(
     // Notify writer that some messages can be acked
     context.parent ! OutboundAck(ack)
     deliver foreach { m ⇒
-      msgDispatch.dispatch(m.recipient, m.recipientAddress, m.serializedMessage, m.senderOption)
+      msgDispatch.dispatch(m.recipient, m.recipientAddress, m.serializedMessage, m.serializedContext, m.senderOption)
     }
   }
 

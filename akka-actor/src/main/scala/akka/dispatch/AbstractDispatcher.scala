@@ -21,13 +21,17 @@ import scala.util.Try
 import scala.util.Failure
 import akka.util.Reflect
 import java.lang.reflect.ParameterizedType
+import akka.trace.Tracer
 
-final case class Envelope private (val message: Any, val sender: ActorRef)
+final case class Envelope private (val message: Any, val sender: ActorRef)(val traceContext: Any)
 
 object Envelope {
-  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
+  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope =
+    apply(message, sender, system, Tracer.emptyContext)
+
+  def apply(message: Any, sender: ActorRef, system: ActorSystem, traceContext: Any): Envelope = {
     if (message == null) throw new InvalidMessageException("Message is null")
-    new Envelope(message, if (sender ne Actor.noSender) sender else system.deadLetters)
+    new Envelope(message, if (sender ne Actor.noSender) sender else system.deadLetters)(traceContext)
   }
 }
 

@@ -261,8 +261,10 @@ private[akka] trait Cell {
    * schedule the actor to run, depending on which type of cell it is.
    * Is only allowed to throw Fatal Throwables.
    */
-  final def sendMessage(message: Any, sender: ActorRef): Unit =
-    sendMessage(Envelope(message, sender, system))
+  final def sendMessage(message: Any, sender: ActorRef): Unit = {
+    val context = systemImpl.tracer.actorTold(self, message, sender)
+    sendMessage(Envelope(message, sender, system, context))
+  }
 
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
@@ -455,6 +457,7 @@ private[akka] class ActorCell(
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope): Unit = try {
+    system.tracer.actorReceived(self, messageHandle.message, messageHandle.sender, messageHandle.traceContext)
     currentMessage = messageHandle
     cancelReceiveTimeout() // FIXME: leave this here???
     messageHandle.message match {
@@ -466,6 +469,7 @@ private[akka] class ActorCell(
     handleInvokeFailure(Nil, e)
   } finally {
     checkReceiveTimeout // Reschedule receive timeout
+    system.tracer.actorCompleted(self, messageHandle.message, messageHandle.sender)
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {

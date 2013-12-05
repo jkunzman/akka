@@ -68,7 +68,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
   val codec = AkkaPduProtobufCodec
 
   val testMsg = WireFormats.SerializedMessage.newBuilder().setSerializerId(0).setMessage(PByteString.copyFromUtf8("foo")).build
-  val testEnvelope = codec.constructMessage(localAkkaAddress, testActor, testMsg, None)
+  val testContext = ByteString("trace", "UTF-8")
+  val testEnvelope = codec.constructMessage(localAkkaAddress, testActor, testMsg, None, testContext)
   val testMsgPdu: ByteString = codec.constructPayload(testEnvelope)
 
   def testHeartbeat = InboundPayload(codec.constructHeartbeat)

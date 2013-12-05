@@ -67,7 +67,7 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
   /**
    * Sends the given message to the recipient supplying the sender if any
    */
-  def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit
+  def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef, traceContext: Any): Unit
 
   /**
    * Sends a management command to the underlying transport stack. The call returns with a Future that indicates

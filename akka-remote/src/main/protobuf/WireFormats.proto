@@ -23,6 +23,7 @@ message RemoteEnvelope {
   required SerializedMessage message = 2;
   optional ActorRefData sender = 4;
   optional fixed64 seq = 5;
+  optional bytes traceContext = 6;
 }
 
 message AcknowledgementInfo {

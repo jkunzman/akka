@@ -915,6 +915,16 @@ public final class WireFormats {
      * <code>optional fixed64 seq = 5;</code>
      */
     long getSeq();
+
+    // optional bytes traceContext = 6;
+    /**
+     * <code>optional bytes traceContext = 6;</code>
+     */
+    boolean hasTraceContext();
+    /**
+     * <code>optional bytes traceContext = 6;</code>
+     */
+    com.google.protobuf.ByteString getTraceContext();
   }
   /**
    * Protobuf type {@code RemoteEnvelope}
@@ -1014,6 +1024,11 @@ public final class WireFormats {
             case 41: {
               bitField0_ |= 0x00000008;
               seq_ = input.readFixed64();
+              break;
+            }
+            case 50: {
+              bitField0_ |= 0x00000010;
+              traceContext_ = input.readBytes();
               break;
             }
           }
@@ -1138,11 +1153,28 @@ public final class WireFormats {
       return seq_;
     }
 
+    // optional bytes traceContext = 6;
+    public static final int TRACECONTEXT_FIELD_NUMBER = 6;
+    private com.google.protobuf.ByteString traceContext_;
+    /**
+     * <code>optional bytes traceContext = 6;</code>
+     */
+    public boolean hasTraceContext() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    /**
+     * <code>optional bytes traceContext = 6;</code>
+     */
+    public com.google.protobuf.ByteString getTraceContext() {
+      return traceContext_;
+    }
+
     private void initFields() {
       recipient_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
       message_ = akka.remote.WireFormats.SerializedMessage.getDefaultInstance();
       sender_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
       seq_ = 0L;
+      traceContext_ = com.google.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1190,6 +1222,9 @@ public final class WireFormats {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeFixed64(5, seq_);
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeBytes(6, traceContext_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -1214,6 +1249,10 @@ public final class WireFormats {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeFixed64Size(5, seq_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(6, traceContext_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1359,6 +1398,8 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000004);
         seq_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000008);
+        traceContext_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -1415,6 +1456,10 @@ public final class WireFormats {
           to_bitField0_ |= 0x00000008;
         }
         result.seq_ = seq_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.traceContext_ = traceContext_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1442,6 +1487,9 @@ public final class WireFormats {
         }
         if (other.hasSeq()) {
           setSeq(other.getSeq());
+        }
+        if (other.hasTraceContext()) {
+          setTraceContext(other.getTraceContext());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1872,6 +1920,42 @@ public final class WireFormats {
       public Builder clearSeq() {
         bitField0_ = (bitField0_ & ~0x00000008);
         seq_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // optional bytes traceContext = 6;
+      private com.google.protobuf.ByteString traceContext_ = com.google.protobuf.ByteString.EMPTY;
+      /**
+       * <code>optional bytes traceContext = 6;</code>
+       */
+      public boolean hasTraceContext() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional bytes traceContext = 6;</code>
+       */
+      public com.google.protobuf.ByteString getTraceContext() {
+        return traceContext_;
+      }
+      /**
+       * <code>optional bytes traceContext = 6;</code>
+       */
+      public Builder setTraceContext(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        traceContext_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes traceContext = 6;</code>
+       */
+      public Builder clearTraceContext() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        traceContext_ = getDefaultInstance().getTraceContext();
         onChanged();
         return this;
       }
@@ -9547,35 +9631,36 @@ public final class WireFormats {
     java.lang.String[] descriptorData = {
       "\n\021WireFormats.proto\"_\n\027AckAndEnvelopeCon" +
       "tainer\022!\n\003ack\030\001 \001(\0132\024.AcknowledgementInf" +
-      "o\022!\n\010envelope\030\002 \001(\0132\017.RemoteEnvelope\"\203\001\n" +
+      "o\022!\n\010envelope\030\002 \001(\0132\017.RemoteEnvelope\"\231\001\n" +
       "\016RemoteEnvelope\022 \n\trecipient\030\001 \002(\0132\r.Act" +
       "orRefData\022#\n\007message\030\002 \002(\0132\022.SerializedM" +
       "essage\022\035\n\006sender\030\004 \001(\0132\r.ActorRefData\022\013\n" +
-      "\003seq\030\005 \001(\006\";\n\023AcknowledgementInfo\022\025\n\rcum" +
-      "ulativeAck\030\001 \002(\006\022\r\n\005nacks\030\002 \003(\006\"\034\n\014Actor" +
-      "RefData\022\014\n\004path\030\001 \002(\t\"S\n\021SerializedMessa" +
-      "ge\022\017\n\007message\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(",
-      "\005\022\027\n\017messageManifest\030\003 \001(\014\"~\n\023DaemonMsgC" +
-      "reateData\022\031\n\005props\030\001 \002(\0132\n.PropsData\022\033\n\006" +
-      "deploy\030\002 \002(\0132\013.DeployData\022\014\n\004path\030\003 \002(\t\022" +
-      "!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"V\n\tPr" +
-      "opsData\022\033\n\006deploy\030\002 \002(\0132\013.DeployData\022\r\n\005" +
-      "clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\017\n\007classes\030\005 \003" +
-      "(\t\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config" +
-      "\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 " +
-      "\001(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaProtocolM" +
-      "essage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002",
-      " \001(\0132\023.AkkaControlMessage\"b\n\022AkkaControl" +
-      "Message\022!\n\013commandType\030\001 \002(\0162\014.CommandTy" +
-      "pe\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshak" +
-      "eInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002" +
-      "(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030" +
-      "\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 \002(\t\022\020\n\010" +
-      "hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol" +
-      "\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIATE\020\001\022\020\n\014" +
-      "DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DISASSO" +
-      "CIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIATE_QU",
-      "ARANTINED\020\005B\017\n\013akka.remoteH\001"
+      "\003seq\030\005 \001(\006\022\024\n\014traceContext\030\006 \001(\014\";\n\023Ackn" +
+      "owledgementInfo\022\025\n\rcumulativeAck\030\001 \002(\006\022\r" +
+      "\n\005nacks\030\002 \003(\006\"\034\n\014ActorRefData\022\014\n\004path\030\001 " +
+      "\002(\t\"S\n\021SerializedMessage\022\017\n\007message\030\001 \002(",
+      "\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageManife" +
+      "st\030\003 \001(\014\"~\n\023DaemonMsgCreateData\022\031\n\005props" +
+      "\030\001 \002(\0132\n.PropsData\022\033\n\006deploy\030\002 \002(\0132\013.Dep" +
+      "loyData\022\014\n\004path\030\003 \002(\t\022!\n\nsupervisor\030\004 \002(" +
+      "\0132\r.ActorRefData\"V\n\tPropsData\022\033\n\006deploy\030" +
+      "\002 \002(\0132\013.DeployData\022\r\n\005clazz\030\003 \002(\t\022\014\n\004arg" +
+      "s\030\004 \003(\014\022\017\n\007classes\030\005 \003(\t\"c\n\nDeployData\022\014" +
+      "\n\004path\030\001 \002(\t\022\016\n\006config\030\002 \001(\014\022\024\n\014routerCo" +
+      "nfig\030\003 \001(\014\022\r\n\005scope\030\004 \001(\014\022\022\n\ndispatcher\030" +
+      "\005 \001(\t\"P\n\023AkkaProtocolMessage\022\017\n\007payload\030",
+      "\001 \001(\014\022(\n\013instruction\030\002 \001(\0132\023.AkkaControl" +
+      "Message\"b\n\022AkkaControlMessage\022!\n\013command" +
+      "Type\030\001 \002(\0162\014.CommandType\022)\n\rhandshakeInf" +
+      "o\030\002 \001(\0132\022.AkkaHandshakeInfo\"N\n\021AkkaHands" +
+      "hakeInfo\022\034\n\006origin\030\001 \002(\0132\014.AddressData\022\013" +
+      "\n\003uid\030\002 \002(\006\022\016\n\006cookie\030\003 \001(\t\"O\n\013AddressDa" +
+      "ta\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004" +
+      "port\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t*{\n\013CommandT" +
+      "ype\022\r\n\tASSOCIATE\020\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\t" +
+      "HEARTBEAT\020\003\022\036\n\032DISASSOCIATE_SHUTTING_DOW",
+      "N\020\004\022\034\n\030DISASSOCIATE_QUARANTINED\020\005B\017\n\013akk" +
+      "a.remoteH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -9593,7 +9678,7 @@ public final class WireFormats {
           internal_static_RemoteEnvelope_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteEnvelope_descriptor,
-              new java.lang.String[] { "Recipient", "Message", "Sender", "Seq", });
+              new java.lang.String[] { "Recipient", "Message", "Sender", "Seq", "TraceContext", });
           internal_static_AcknowledgementInfo_descriptor =
             getDescriptor().getMessageTypes().get(2);
           internal_static_AcknowledgementInfo_fieldAccessorTable = new

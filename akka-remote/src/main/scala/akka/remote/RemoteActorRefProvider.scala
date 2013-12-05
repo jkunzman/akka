@@ -18,6 +18,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import com.typesafe.config.Config
 import akka.ConfigurationException
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.trace.Tracer
 
 /**
  * INTERNAL API
@@ -81,11 +82,11 @@ private[akka] object RemoteActorRefProvider {
     import EndpointManager.Send
 
     override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
-      case Send(m, senderOption, _, seqOpt) ⇒
+      case Send(m, senderOption, _, traceContext, seqOpt) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
         if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
-      case DeadLetter(Send(m, senderOption, recipient, seqOpt), _, _) ⇒
+      case DeadLetter(Send(m, senderOption, recipient, Tracer.emptyContext, seqOpt), _, _) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
         if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
@@ -474,13 +475,14 @@ private[akka] class RemoteActorRef private[akka] (
 
   def sendSystemMessage(message: SystemMessage): Unit =
     try {
-      remote.send(message, None, this)
+      remote.send(message, None, this, Tracer.emptyContext)
       provider.afterSendSystemMessage(message)
     } catch handleException
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     if (message == null) throw new InvalidMessageException("Message is null")
-    try remote.send(message, Option(sender), this) catch handleException
+    val context = remote.system.tracer.actorTold(this, message, sender)
+    try remote.send(message, Option(sender), this, context) catch handleException
   }
 
   override def provider: RemoteActorRefProvider = remote.provider
