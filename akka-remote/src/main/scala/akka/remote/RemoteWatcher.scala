@@ -107,6 +107,7 @@ private[akka] class RemoteWatcher(
   var watching: Set[(ActorRef, ActorRef)] = Set.empty
   // nodes that this node is watching, i.e. expecting hearteats from these nodes
   var watchingNodes: Set[Address] = Set.empty
+  var pendingRewatch: Map[(ActorRef, ActorRef), Boolean] = Map.empty
   var unreachable: Set[Address] = Set.empty
   var addressUids: Map[Address, Int] = Map.empty
 
@@ -176,12 +177,20 @@ private[akka] class RemoteWatcher(
     if (watchee.path.uid == akka.actor.ActorCell.undefinedUid)
       logActorForDeprecationWarning(watchee)
     else if (watcher != self) {
-      log.debug("Watching: [{} -> {}]", watcher.path, watchee.path)
-      addWatching(watchee, watcher)
+      val watcheeWatcherTuple = (watchee, watcher)
+      pendingRewatch.get(watcheeWatcherTuple) match {
+        case Some(false) ⇒
+          // has been unwatched inbetween, skip re-watch
+          log.debug("Ignoring unwatched re-watch of: [{} -> {}]", watcher.path, watchee.path)
+        case _ ⇒
+          pendingRewatch -= watcheeWatcherTuple
+          log.debug("Watching: [{} -> {}]", watcher.path, watchee.path)
+          addWatching(watchee, watcher)
 
-      // also watch from self, to be able to cleanup on termination of the watchee
-      context watch watchee
-      watching += ((watchee, self))
+          // also watch from self, to be able to cleanup on termination of the watchee
+          context watch watchee
+          watching += ((watchee, self))
+      }
     }
 
   def addWatching(watchee: ActorRef, watcher: ActorRef): Unit = {
@@ -200,7 +209,10 @@ private[akka] class RemoteWatcher(
       logActorForDeprecationWarning(watchee)
     else if (watcher != self) {
       log.debug("Unwatching: [{} -> {}]", watcher.path, watchee.path)
-      watching -= ((watchee, watcher))
+      val watcheeWatcherTuple = (watchee, watcher)
+      watching -= watcheeWatcherTuple
+      if (pendingRewatch contains watcheeWatcherTuple)
+        pendingRewatch = pendingRewatch.updated(watcheeWatcherTuple, false)
 
       // clean up self watch when no more watchers of this watchee
       if (watching.forall { case (wee, wer) ⇒ wee != watchee || wer == self }) {
@@ -278,6 +290,11 @@ private[akka] class RemoteWatcher(
     watching.foreach {
       case (wee: InternalActorRef, wer: InternalActorRef) ⇒
         if (wee.path.address == address) {
+          // this re-watch will result in a new WatchRemote message to this actor
+          // must keep track of the pending re-watch because if an UnwatchRemote comes in
+          // before the extra WatchRemote, the re-watch should be ignored
+          if (wer != self)
+            pendingRewatch = pendingRewatch.updated((wee, wer), true)
           log.debug("Re-watch [{} -> {}]", wer, wee)
           wee.sendSystemMessage(Watch(wee, wer)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
         }
