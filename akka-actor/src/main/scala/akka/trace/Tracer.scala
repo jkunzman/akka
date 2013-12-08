@@ -33,7 +33,7 @@ object Tracer {
     tracers.length match {
       case 0 ⇒ new NoTracer
       case 1 ⇒ create(dynamicAccess, config)(tracers.head)
-      case _ ⇒ new MultiTracer(tracers.map(create(dynamicAccess, config)).toList)
+      case _ ⇒ new MultiTracer(tracers map create(dynamicAccess, config))
     }
   }
 
