@@ -10,6 +10,35 @@ import com.typesafe.config.Config
 import scala.collection.immutable
 import scala.reflect.ClassTag
 
+/**
+ * Tracers are attached to actor systems using the `akka.tracers` configuration option,
+ * specifying a list of fully qualified class names of tracer implementations. For example:
+ *
+ * {{{
+ * akka.tracers = ["com.example.SomeTracer"]
+ * }}}
+ *
+ * Tracer classes must extend [[akka.trace.Tracer]] and have a public constructor
+ * which is empty or optionally accepts a [[com.typesafe.config.Config]] parameter.
+ * The config object is the same one as used to create the actor system.
+ *
+ * There are methods to access an attached tracer implementation on an actor system,
+ * for tracers that provide user APIs.
+ *
+ * {{{
+ * // Scala
+ * Tracer[SomeTracer](system) // throws exception if not found
+ *
+ * // alternatively
+ * Tracer.find[SomeTracer](system) // returns Option
+ *
+ * // Java
+ * Tracer.get(system, SomeTracer.class); // throws exception if not found
+ *
+ * // and to check if a tracer exists
+ * Tracer.exists(system, SomeTracer.class); // returns boolean
+ * }}}
+ */
 object Tracer {
   /**
    * Empty placeholder (null) for when there is no trace context.
@@ -17,17 +46,17 @@ object Tracer {
   val emptyContext: Any = null
 
   /**
-   * Create the tracer(s) for an actor system.
+   * Internal API to create the tracer(s) for an actor system.
    *
-   * Tracer classes must extend akka.trace.Tracer and have a public constructor
-   * which is empty or optionally accepts a com.typesafe.config.Config parameter.
+   * Tracer classes must extend [[akka.trace.Tracer]] and have a public constructor
+   * which is empty or optionally accepts a [[com.typesafe.config.Config]] parameter.
    * The config object is the same one as used to create the actor system.
    *
-   * If there are no tracers then a default empty implementation with final methods
-   * is used (akka.trace.NoTracer).
-   * If there is exactly one tracer, then it is created and will be called directly.
-   * If there are two or more tracers, then an akka.trace.MultiTracer is created to
-   * delegate to the individual tracers and coordinate the trace contexts.
+   *  - If there are no tracers then a default empty implementation with final methods
+   *    is used ([[akka.trace.NoTracer]]).
+   *  - If there is exactly one tracer, then it is created and will be called directly.
+   *  - If there are two or more tracers, then an [[akka.trace.MultiTracer]] is created to
+   *    delegate to the individual tracers and coordinate the trace contexts.
    */
   def apply(tracers: immutable.Seq[String], config: Config, dynamicAccess: DynamicAccess): Tracer = {
     tracers.length match {
@@ -38,7 +67,7 @@ object Tracer {
   }
 
   /**
-   * Create a tracer dynamically from a fully qualified class name.
+   * Internal API to create a tracer dynamically from a fully qualified class name.
    * Tracer constructors can optionally accept the actor system config.
    */
   def create(dynamicAccess: DynamicAccess, config: Config)(fqcn: String): Tracer = {
@@ -49,7 +78,7 @@ object Tracer {
   }
 
   /**
-   * Access an attached tracer by class. Will return null if there is no matching tracer.
+   * Access an attached tracer by class. Returns null if there is no matching tracer.
    */
   def access[T <: Tracer](system: ActorSystem, tracerClass: Class[T]): T = {
     val tracer = system match {
@@ -64,14 +93,21 @@ object Tracer {
   }
 
   /**
-   * Find an attached tracer by class, returning an Option.
+   * Find an attached tracer by class. Returns an Option.
    */
   def find[T <: Tracer](system: ActorSystem, tracerClass: Class[T]): Option[T] =
     Option(access(system, tracerClass))
 
   /**
+   * Find an attached tracer by implicit class tag. Returns an Option.
+   */
+  def find[T <: Tracer](system: ActorSystem)(implicit tag: ClassTag[T]): Option[T] =
+    find(system, tag.runtimeClass.asInstanceOf[Class[T]])
+
+  /**
    * Access an attached tracer by class.
-   * Will throw IllegalArgumentException if there is no matching tracer.
+   *
+   * @throws IllegalArgumentException if there is no matching tracer
    */
   def apply[T <: Tracer](system: ActorSystem, tracerClass: Class[T]): T =
     access(system, tracerClass) match {
@@ -81,7 +117,8 @@ object Tracer {
 
   /**
    * Access an attached tracer by implicit class tag.
-   * Will throw IllegalArgumentException if there is no matching tracer.
+   *
+   * @throws IllegalArgumentException if there is no matching tracer
    */
   def apply[T <: Tracer](system: ActorSystem)(implicit tag: ClassTag[T]): T =
     apply(system, tag.runtimeClass.asInstanceOf[Class[T]])
@@ -94,63 +131,132 @@ object Tracer {
 
   /**
    * Java API: Access an attached tracer by class.
-   * Will throw IllegalArgumentException if there is no matching tracer.
+   *
+   * @throws IllegalArgumentException if there is no matching tracer
    */
   def get[T <: Tracer](system: ActorSystem, tracerClass: Class[T]): T =
     apply(system, tracerClass)
 }
 
 /**
- * The Akka trace SPI.
+ * Akka Trace SPI.
+ *
+ * '''Important: tracer implementations must be thread-safe and non-blocking.'''
  *
  * A context object is returned by some methods and will be propagated across threads.
  * In some implementations the context object will not be needed and can simply be null.
  * For remote messages the trace context needs to be serialized to bytes.
+ *
+ * A local message flow will have the following calls:
+ *
+ *  - `actorTold` when the message is sent with `!` or `tell`
+ *  - `actorReceived` at the beginning of message processing
+ *  - `actorCompleted` at the end of message processing
+ *
+ * A remote message flow will have the following calls:
+ *
+ *  - `actorTold` when the message is first sent to a remote actor with `!` or `tell`
+ *  - `remoteMessageSent` when the message is being sent over the wire
+ *  - `remoteMessageReceived` before the message is processed on the receiving node
+ *  - `actorTold` when the message is delivered locally on the receiving node
+ *  - `remoteMessageCompleted` at the end of remote message processing
+ *  - `actorReceived` at the beginning of message processing on the receiving node
+ *  - `actorCompleted` at the end of message processing
  */
 abstract class Tracer {
   /**
-   * Record actor system started (at end of start).
+   * Record actor system started - after system initialisation and start.
+   *
+   * @param system the [[akka.actor.ActorSystem]] that has started
    */
   def systemStarted(system: ActorSystem): Unit
 
   /**
-   * Record actor system shutdown (after shutdown).
-   * Tracer cleanup and shutdown should also happen at this point.
+   * Record actor system shutdown - on system termination callback.
+   *
+   * '''Any tracer cleanup and shutdown can also happen at this point.'''
+   *
+   * @param system the [[akka.actor.ActorSystem]] that has shutdown
    */
   def systemShutdown(system: ActorSystem): Unit
 
   /**
-   * Record actor told (at message send).
+   * Record actor told - on message send with `!` or `tell`.
+   *
    * Returns a context object which will be attached to the message send,
-   * and passed on the corresponding call to `actorReceived`.
+   * and passed on the corresponding call to [[Tracer#actorReceived]].
+   *
+   * @param actorRef the [[akka.actor.ActorRef]] being told the message
+   * @param message the message object
+   * @param sender the sender [[akka.actor.ActorRef]] (may be null if no sender)
+   * @return a context object (or `Tracer.emptyContext` / `null` if not used)
    */
   def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Any
 
   /**
-   * Record actor received (at beginning of message processing).
-   * Passes the context object attached by `actorTold`.
+   * Record actor received - at the beginning of message processing.
+   *
+   * Passes the context object returned by the corresponding [[Tracer#actorTold]].
+   *
+   * @param actorRef the self [[akka.actor.ActorRef]] of the actor
+   * @param message the message object
+   * @param sender the sender [[akka.actor.Actor]] (may be dead letters)
+   * @param context the context object attached from `actorTold`
    */
   def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef, context: Any): Unit
 
   /**
-   * Record actor completed (at end of message processing).
+   * Record actor completed - at the end of message processing.
+   *
+   * @param actorRef the self [[akka.actor.ActorRef]] of the actor
+   * @param message the message object
+   * @param sender the sender [[akka.actor.Actor]] (may be dead letters)
    */
   def actorCompleted(actorRef: ActorRef, message: Any, sender: ActorRef): Unit
 
   /**
-   * Record remote message sent.
-   * Also return the serialized trace context, if used, otherwise an empty byte string.
+   * Record remote message sent - when remote message is going over the wire.
+   *
+   * Returns the serialized trace context, if used, otherwise an empty byte string.
+   * The serialized trace context will be passed to [[Tracer#remoteMessageReceived]].
+   *
+   * @param actorRef the recipient [[akka.actor.ActorRef]] of the remote message
+   * @param message the message object
+   * @param size the size in bytes of the serialized user message object
+   * @param sender the sender [[akka.actor.ActorRef]] (may be dead letters)
+   * @param context the context object attached from `actorTold` and to be serialized
+   * @return an [[akka.util.ByteString]] for the serialized trace context (can be an empty ByteString)
    */
   def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: Any): ByteString
 
   /**
-   * Record remote message received.
-   * The serialized trace context from `remoteMessageSent` is passed in.
+   * Record remote message received - before the processing of the remote message.
+   *
+   * Note that when the remote message is processed a local actor send will be made,
+   * with a call to `actorTold`. It is up to the tracer implementation to transfer
+   * the trace context to this `actorTold` call, if needed. The `remoteMessageReceived`
+   * and `remoteMessageCompleted` calls frame any local message sends related to this
+   * remote message being processed.
+   *
+   * The serialized trace context from [[Tracer#remoteMessageSent]] is passed in.
+   *
+   * @param actorRef the recipient [[akka.actor.ActorRef]] of the remote message
+   * @param message the (deserialized) message object
+   * @param size the size in bytes of the serialized user message object
+   * @param sender the sender [[akka.actor.ActorRef]] (may be dead letters)
+   * @param context the serialized trace context from `remoteMessageSent`
    */
   def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: ByteString): Unit
 
   /**
-   * Record remote message completed (at end of remote message processing).
+   * Record remote message completed - at the end of remote message processing.
+   *
+   * This call allows the cleanup of any thread-local state set on [[Tracer#remoteMessageReceived]].
+   *
+   * @param actorRef the recipient [[akka.actor.ActorRef]] of the remote message
+   * @param message the (deserialized) message object
+   * @param size the size in bytes of the serialized user message object
+   * @param sender the sender [[akka.actor.ActorRef]] (may be dead letters)
    */
   def remoteMessageCompleted(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit
 }
