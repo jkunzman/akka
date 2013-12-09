@@ -25,18 +25,18 @@ import scala.reflect.ClassTag
  * There are methods to access an attached tracer implementation on an actor system,
  * for tracers that provide user APIs.
  *
+ * Accessing a tracer in Scala:
  * {{{
- * // Scala
  * Tracer[SomeTracer](system) // throws exception if not found
  *
- * // alternatively
  * Tracer.find[SomeTracer](system) // returns Option
+ * }}}
  *
- * // Java
- * Tracer.get(system, SomeTracer.class); // throws exception if not found
- *
- * // and to check if a tracer exists
+ * Accessing a tracer in Java:
+ * {{{
  * Tracer.exists(system, SomeTracer.class); // returns boolean
+ *
+ * Tracer.get(system, SomeTracer.class); // throws exception if not found
  * }}}
  */
 object Tracer {
@@ -46,12 +46,12 @@ object Tracer {
   val emptyContext: Any = null
 
   /**
-   * Internal API to determine whether or not tracing is enabled.
+   * INTERNAL API. Determine whether or not tracing is enabled.
    */
-  def enabled(tracers: immutable.Seq[String], config: Config): Boolean = tracers.nonEmpty
+  private[akka] def enabled(tracers: immutable.Seq[String], config: Config): Boolean = tracers.nonEmpty
 
   /**
-   * Internal API to create the tracer(s) for an actor system.
+   * INTERNAL API. Create the tracer(s) for an actor system.
    *
    * Tracer classes must extend [[akka.trace.Tracer]] and have a public constructor
    * which is empty or optionally accepts a [[com.typesafe.config.Config]] parameter.
@@ -63,7 +63,7 @@ object Tracer {
    *  - If there are two or more tracers, then an [[akka.trace.MultiTracer]] is created to
    *    delegate to the individual tracers and coordinate the trace contexts.
    */
-  def apply(tracers: immutable.Seq[String], config: Config, dynamicAccess: DynamicAccess): Tracer = {
+  private[akka] def apply(tracers: immutable.Seq[String], config: Config, dynamicAccess: DynamicAccess): Tracer = {
     tracers.length match {
       case 0 ⇒ new NoTracer
       case 1 ⇒ create(dynamicAccess, config)(tracers.head)
@@ -72,10 +72,10 @@ object Tracer {
   }
 
   /**
-   * Internal API to create a tracer dynamically from a fully qualified class name.
+   * INTERNAL API. Create a tracer dynamically from a fully qualified class name.
    * Tracer constructors can optionally accept the actor system config.
    */
-  def create(dynamicAccess: DynamicAccess, config: Config)(fqcn: String): Tracer = {
+  private[akka] def create(dynamicAccess: DynamicAccess, config: Config)(fqcn: String): Tracer = {
     val configArg = List(classOf[Config] -> config)
     dynamicAccess.createInstanceFor[Tracer](fqcn, configArg).recoverWith({
       case _: NoSuchMethodException ⇒ dynamicAccess.createInstanceFor[Tracer](fqcn, Nil)
