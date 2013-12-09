@@ -46,6 +46,11 @@ object Tracer {
   val emptyContext: Any = null
 
   /**
+   * Internal API to determine whether or not tracing is enabled.
+   */
+  def enabled(tracers: immutable.Seq[String], config: Config): Boolean = tracers.nonEmpty
+
+  /**
    * Internal API to create the tracer(s) for an actor system.
    *
    * Tracer classes must extend [[akka.trace.Tracer]] and have a public constructor

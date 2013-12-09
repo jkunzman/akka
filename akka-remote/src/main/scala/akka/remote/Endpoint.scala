@@ -61,7 +61,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
 
     def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender]"
 
-    system.tracer.remoteMessageReceived(recipient, payload, serializedMessage.getSerializedSize, sender, serializedContext)
+    if (system.hasTracer) system.tracer.remoteMessageReceived(recipient, payload, serializedMessage.getSerializedSize, sender, serializedContext)
 
     recipient match {
 
@@ -104,7 +104,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
 
     }
 
-    system.tracer.remoteMessageCompleted(recipient, payload, serializedMessage.getSerializedSize, sender)
+    if (system.hasTracer) system.tracer.remoteMessageCompleted(recipient, payload, serializedMessage.getSerializedSize, sender)
   }
 
 }
@@ -578,16 +578,23 @@ private[remote] class EndpointWriter(
       try {
         handle match {
           case Some(h) ⇒
-            val sender = senderOption.getOrElse(extendedSystem.deadLetters)
-
             if (provider.remoteSettings.LogSend) {
-              def msgLog = s"RemoteMessage: [$msg] to [$recipient]<+[${recipient.path}] from [$sender]"
+              def msgLog = s"RemoteMessage: [$msg] to [$recipient]<+[${recipient.path}] from [${senderOption.getOrElse(extendedSystem.deadLetters)}]"
               log.debug("sending message {}", msgLog)
             }
 
             val serializedMessage = serializeMessage(msg)
-            val msgSize = serializedMessage.getSerializedSize
-            val serializedContext = extendedSystem.tracer.remoteMessageSent(recipient, msg, msgSize, sender, traceContext)
+
+            val serializedContext = if (extendedSystem.hasTracer) {
+              extendedSystem.tracer.remoteMessageSent(
+                recipient,
+                msg,
+                serializedMessage.getSerializedSize,
+                senderOption.getOrElse(extendedSystem.deadLetters),
+                traceContext)
+            } else {
+              ByteString.empty
+            }
 
             val pdu = codec.constructMessage(
               recipient.localAddressToUse,

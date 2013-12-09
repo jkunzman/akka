@@ -453,6 +453,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def dynamicAccess: DynamicAccess
 
   /**
+   * Returns whether or not a tracer is attached.
+   */
+  def hasTracer: Boolean
+
+  /**
    * Access to the trace SPI.
    */
   def tracer: Tracer
@@ -540,6 +545,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   import settings._
 
+  val hasTracer: Boolean = Tracer.enabled(settings.Tracers, settings.config)
   val tracer: Tracer = Tracer(settings.Tracers, settings.config, dynamicAccess)
 
   // this provides basic logging (to stdout) until .start() is called below
@@ -592,8 +598,10 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
-    registerOnTermination { tracer.systemShutdown(this) }
-    tracer.systemStarted(this)
+    if (hasTracer) {
+      tracer.systemStarted(this)
+      registerOnTermination { tracer.systemShutdown(this) }
+    }
     this
   }
 
