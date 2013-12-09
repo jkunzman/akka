@@ -193,7 +193,7 @@ abstract class Tracer {
    *
    * @param actorRef the [[akka.actor.ActorRef]] being told the message
    * @param message the message object
-   * @param sender the sender [[akka.actor.ActorRef]] (may be null if no sender)
+   * @param sender the sender [[akka.actor.ActorRef]] (may be dead letters)
    * @return a context object (or `Tracer.emptyContext` / `null` if not used)
    */
   def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Any

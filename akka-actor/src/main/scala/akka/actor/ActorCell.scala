@@ -263,7 +263,8 @@ private[akka] trait Cell {
    */
   final def sendMessage(message: Any, sender: ActorRef): Unit = {
     if (systemImpl.hasTracer) {
-      val context = systemImpl.tracer.actorTold(self, message, sender)
+      val senderRef = if (sender ne Actor.noSender) sender else system.deadLetters
+      val context = systemImpl.tracer.actorTold(self, message, senderRef)
       sendMessage(Envelope(message, sender, system, context))
     } else {
       sendMessage(Envelope(message, sender, system))
