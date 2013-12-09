@@ -89,7 +89,7 @@ object Tracer {
     val tracer = system match {
       case actorSystem: ExtendedActorSystem ⇒
         actorSystem.tracer match {
-          case multi: MultiTracer ⇒ multi.tracers find tracerClass.isInstance getOrElse null
+          case multi: MultiTracer ⇒ (multi.tracers find tracerClass.isInstance).orNull
           case single             ⇒ if (tracerClass isInstance single) single else null
         }
       case _ ⇒ null
