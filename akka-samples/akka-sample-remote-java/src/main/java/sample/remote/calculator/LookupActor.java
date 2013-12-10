@@ -37,7 +37,7 @@ public class LookupActor extends UntypedActor {
     if (message instanceof ActorIdentity) {
       calculator = ((ActorIdentity) message).getRef();
       if (calculator == null) {
-        System.out.println("Remote actor not availible: " + path);
+        System.out.println("Remote actor not available: " + path);
       } else {
         getContext().watch(calculator);
         getContext().become(active, true);

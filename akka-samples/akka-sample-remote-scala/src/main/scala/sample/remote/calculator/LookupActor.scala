@@ -27,7 +27,7 @@ class LookupActor(path: String) extends Actor {
     case ActorIdentity(`path`, Some(actor)) =>
       context.watch(actor)
       context.become(active(actor))
-    case ActorIdentity(`path`, None) => println(s"Remote actor not availible: $path")
+    case ActorIdentity(`path`, None) => println(s"Remote actor not available: $path")
     case ReceiveTimeout              => sendIdentifyRequest()
     case _                           => println("Not ready yet")
   }

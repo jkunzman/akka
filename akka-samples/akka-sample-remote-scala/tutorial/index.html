@@ -7,7 +7,7 @@
 
 <div>
 <p>
-In order to showcase the <a href="http://doc.akka.io/docs/akka/2.2.3/scala/remoting.html" target="_blank">remote capabilities of Akka</a>
+In order to showcase the <a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/remoting.html" target="_blank">remote capabilities of Akka</a>
 we thought a remote calculator could do the trick.
 This sample demonstrates both remote deployment and look-up of remote actors.
 </p>
@@ -34,7 +34,7 @@ Open <a href="#code/src/main/scala/sample/remote/calculator/LookupApplication.sc
 
 <p>
 There you see how the two actor systems and actors are started. In this first step they are running in the same JVM process,
-but you can run them in separate processes as described later.
+but you can run them in separate processes as described later. Note that this changes nothing in the configuration or implementation.
 </p>
 
 <p>
@@ -68,11 +68,12 @@ name, as do IP and port number. Top-level actors are always created below the "/
 First it sends an <code>Identify</code> message to the actor selection of the path.
 The remote calculator actor will reply with <code>ActorIdentity</code> containing its <code>ActorRef</code>.
 <code>Identify</code> is a built-in message that all Actors will understand and automatically reply to with a
-<code>ActorIdentity</code>. If the identification fails it will be retried after the scheduled timeout.
+<code>ActorIdentity</code>. If the identification fails it will be retried after the scheduled timeout
+by the <code>LookupActor</code>.
 </p>
 
 <p>
-Note how none of this is specific to remoting, this also applies when talking to a local actor which
+Note how none of the code is specific to remoting, this also applies when talking to a local actor which
 might terminate and be recreated. That is what we call Location Transparency.
 </p>
 
