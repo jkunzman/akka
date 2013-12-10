@@ -148,25 +148,36 @@ object Tracer {
  *
  * '''Important: tracer implementations must be thread-safe and non-blocking.'''
  *
- * A context object is returned by some methods and will be propagated across threads.
+ * There is optional context propagation available to tracers.
+ * This can be used to transfer a transaction identifier through a message flow, or similar.
  * In some implementations the context object will not be needed and can simply be null.
  * For remote messages the trace context needs to be serialized to bytes.
  *
  * A local message flow will have the following calls:
  *
  *  - `actorTold` when the message is sent with `!` or `tell`
+ *  - `getContext` to transfer optional context with the message
+ *  - `setContext` with transfered context before message processing
  *  - `actorReceived` at the beginning of message processing
  *  - `actorCompleted` at the end of message processing
+ *  - `clearContext` after message processing is complete
  *
  * A remote message flow will have the following calls:
  *
  *  - `actorTold` when the message is first sent to a remote actor with `!` or `tell`
+ *  - `getContext` to transfer optional context with the message
+ *  - `serializeContext` to serialize the attached context
  *  - `remoteMessageSent` when the message is being sent over the wire
+ *  - `deserializeContext` to deserialize the transfered context
+ *  - `setContext` to frame remote message processing
  *  - `remoteMessageReceived` before the message is processed on the receiving node
  *  - `actorTold` when the message is delivered locally on the receiving node
- *  - `remoteMessageCompleted` at the end of remote message processing
+ *  - `getContext` to transfer optional context with local message send
+ *  - `clearContext` after remote message processing is complete
+ *  - `setContext` with transfered context before message processing
  *  - `actorReceived` at the beginning of message processing on the receiving node
  *  - `actorCompleted` at the end of message processing
+ *  - `clearContext` after message processing is complete
  */
 abstract class Tracer {
   /**
@@ -188,27 +199,26 @@ abstract class Tracer {
   /**
    * Record actor told - on message send with `!` or `tell`.
    *
-   * Returns a context object which will be attached to the message send,
-   * and passed on the corresponding call to [[Tracer#actorReceived]].
+   * A call to [[Tracer#getContext]] will be made after a call to `actorTold`
+   * when the context is attached to the message.
    *
    * @param actorRef the [[akka.actor.ActorRef]] being told the message
    * @param message the message object
    * @param sender the sender [[akka.actor.ActorRef]] (may be dead letters)
-   * @return a context object (or `Tracer.emptyContext` / `null` if not used)
    */
-  def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Any
+  def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Unit
 
   /**
    * Record actor received - at the beginning of message processing.
    *
-   * Passes the context object returned by the corresponding [[Tracer#actorTold]].
+   * A call to [[Tracer#setContext]] will be made before a call to `actorReceived`
+   * with the context attached on message send.
    *
    * @param actorRef the self [[akka.actor.ActorRef]] of the actor
    * @param message the message object
    * @param sender the sender [[akka.actor.Actor]] (may be dead letters)
-   * @param context the context object attached from `actorTold`
    */
-  def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef, context: Any): Unit
+  def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef): Unit
 
   /**
    * Record actor completed - at the end of message processing.
@@ -222,48 +232,60 @@ abstract class Tracer {
   /**
    * Record remote message sent - when remote message is going over the wire.
    *
-   * Returns the serialized trace context, if used, otherwise an empty byte string.
-   * The serialized trace context will be passed to [[Tracer#remoteMessageReceived]].
-   *
    * @param actorRef the recipient [[akka.actor.ActorRef]] of the remote message
    * @param message the message object
    * @param size the size in bytes of the serialized user message object
    * @param sender the sender [[akka.actor.ActorRef]] (may be dead letters)
-   * @param context the context object attached from `actorTold` and to be serialized
-   * @return an [[akka.util.ByteString]] for the serialized trace context (can be an empty ByteString)
    */
-  def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: Any): ByteString
+  def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit
 
   /**
    * Record remote message received - before the processing of the remote message.
    *
-   * Note that when the remote message is processed a local actor send will be made,
-   * with a call to `actorTold`. It is up to the tracer implementation to transfer
-   * the trace context to this `actorTold` call, if needed. The `remoteMessageReceived`
-   * and `remoteMessageCompleted` calls frame any local message sends related to this
-   * remote message being processed.
-   *
-   * The serialized trace context from [[Tracer#remoteMessageSent]] is passed in.
-   *
    * @param actorRef the recipient [[akka.actor.ActorRef]] of the remote message
    * @param message the (deserialized) message object
    * @param size the size in bytes of the serialized user message object
    * @param sender the sender [[akka.actor.ActorRef]] (may be dead letters)
-   * @param context the serialized trace context from `remoteMessageSent`
    */
-  def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: ByteString): Unit
+  def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit
 
   /**
-   * Record remote message completed - at the end of remote message processing.
+   * Retrieve the current context object. For example, from a thread-local.
+   * The context object will be attached to an appropriate object for transfer
+   * and then passed to a corresponding [[Tracer#setContext]] call.
    *
-   * This call allows the cleanup of any thread-local state set on [[Tracer#remoteMessageReceived]].
-   *
-   * @param actorRef the recipient [[akka.actor.ActorRef]] of the remote message
-   * @param message the (deserialized) message object
-   * @param size the size in bytes of the serialized user message object
-   * @param sender the sender [[akka.actor.ActorRef]] (may be dead letters)
+   * @return the current context object
    */
-  def remoteMessageCompleted(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit
+  def getContext(): Any
+
+  /**
+   * Set the current context, with the context object returned by [[Tracer#getContext]].
+   *
+   * @param context the transfered context object
+   */
+  def setContext(context: Any): Unit
+
+  /**
+   * Clear the current context. Matches a call to [[Tracer#setContext]] and together
+   * they frame the context. For example, before and after message processing.
+   */
+  def clearContext(): Unit
+
+  /**
+   * Serialize a context to bytes for remote transfer or persistence.
+   *
+   * @param context the context object to be serialized
+   * @return serialized context bytes
+   */
+  def serializeContext(context: Any): ByteString
+
+  /**
+   * Deserialize a context as bytes, serialized by [[Tracer#serializeContext]].
+   *
+   * @param the serialized context bytes
+   * @return deserialized context object
+   */
+  def deserializeContext(context: ByteString): Any
 }
 
 /**
@@ -272,12 +294,16 @@ abstract class Tracer {
 final class NoTracer extends Tracer {
   final def systemStarted(system: ActorSystem): Unit = ()
   final def systemShutdown(system: ActorSystem): Unit = ()
-  final def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Any = Tracer.emptyContext
-  final def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef, context: Any): Unit = ()
+  final def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = ()
+  final def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = ()
   final def actorCompleted(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = ()
-  final def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: Any): ByteString = ByteString.empty
-  final def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: ByteString): Unit = ()
-  final def remoteMessageCompleted(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = ()
+  final def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = ()
+  final def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = ()
+  final def getContext(): Any = Tracer.emptyContext
+  final def setContext(context: Any): Unit = ()
+  final def clearContext(): Unit = ()
+  final def serializeContext(context: Any): ByteString = ByteString.empty
+  final def deserializeContext(context: ByteString): Any = Tracer.emptyContext
 }
 
 /**
@@ -286,10 +312,38 @@ final class NoTracer extends Tracer {
 class EmptyTracer extends Tracer {
   def systemStarted(system: ActorSystem): Unit = ()
   def systemShutdown(system: ActorSystem): Unit = ()
-  def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Any = Tracer.emptyContext
-  def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef, context: Any): Unit = ()
+  def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = ()
+  def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = ()
   def actorCompleted(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = ()
-  def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: Any): ByteString = ByteString.empty
-  def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: ByteString): Unit = ()
-  def remoteMessageCompleted(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = ()
+  def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = ()
+  def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = ()
+  def getContext(): Any = Tracer.emptyContext
+  def setContext(context: Any): Unit = ()
+  def clearContext(): Unit = ()
+  def serializeContext(context: Any): ByteString = ByteString.empty
+  def deserializeContext(context: ByteString): Any = Tracer.emptyContext
+}
+
+/**
+ * Abstract Tracer without context propagation.
+ */
+abstract class NoContextTracer extends Tracer {
+  final def getContext(): Any = Tracer.emptyContext
+  final def setContext(context: Any): Unit = ()
+  final def clearContext(): Unit = ()
+  final def serializeContext(context: Any): ByteString = ByteString.empty
+  final def deserializeContext(context: ByteString): Any = Tracer.emptyContext
+}
+
+/**
+ * Abstract Tracer with context propagation only.
+ */
+abstract class ContextOnlyTracer extends Tracer {
+  final def systemStarted(system: ActorSystem): Unit = ()
+  final def systemShutdown(system: ActorSystem): Unit = ()
+  final def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = ()
+  final def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = ()
+  final def actorCompleted(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = ()
+  final def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = ()
+  final def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = ()
 }

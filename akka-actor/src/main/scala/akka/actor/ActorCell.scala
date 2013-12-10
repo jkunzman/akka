@@ -264,7 +264,8 @@ private[akka] trait Cell {
   final def sendMessage(message: Any, sender: ActorRef): Unit = {
     if (systemImpl.hasTracer) {
       val senderRef = if (sender ne Actor.noSender) sender else system.deadLetters
-      val context = systemImpl.tracer.actorTold(self, message, senderRef)
+      systemImpl.tracer.actorTold(self, message, senderRef)
+      val context = systemImpl.tracer.getContext
       sendMessage(Envelope(message, sender, system, context))
     } else {
       sendMessage(Envelope(message, sender, system))
@@ -462,7 +463,10 @@ private[akka] class ActorCell(
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope): Unit = try {
-    if (system.hasTracer) system.tracer.actorReceived(self, messageHandle.message, messageHandle.sender, messageHandle.traceContext)
+    if (system.hasTracer) {
+      system.tracer.setContext(messageHandle.traceContext)
+      system.tracer.actorReceived(self, messageHandle.message, messageHandle.sender)
+    }
     currentMessage = messageHandle
     cancelReceiveTimeout() // FIXME: leave this here???
     messageHandle.message match {
@@ -474,7 +478,10 @@ private[akka] class ActorCell(
     handleInvokeFailure(Nil, e)
   } finally {
     checkReceiveTimeout // Reschedule receive timeout
-    if (system.hasTracer) system.tracer.actorCompleted(self, messageHandle.message, messageHandle.sender)
+    if (system.hasTracer) {
+      system.tracer.actorCompleted(self, messageHandle.message, messageHandle.sender)
+      system.tracer.clearContext()
+    }
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {

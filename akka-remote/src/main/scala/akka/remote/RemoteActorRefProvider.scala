@@ -481,7 +481,10 @@ private[akka] class RemoteActorRef private[akka] (
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     if (message == null) throw new InvalidMessageException("Message is null")
-    val context = remote.system.tracer.actorTold(this, message, sender)
+    val context = if (remote.system.hasTracer) {
+      remote.system.tracer.actorTold(this, message, sender)
+      remote.system.tracer.getContext
+    } else Tracer.emptyContext
     try remote.send(message, Option(sender), this, context) catch handleException
   }
 

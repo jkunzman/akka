@@ -29,32 +29,23 @@ object Transaction {
  * Example tracer implementation that threads a transaction identifier
  * through message flows using the trace context and a thread-local.
  */
-class TransactionTracer(config: Config) extends Tracer {
-  final def systemStarted(system: ActorSystem): Unit = ()
-  final def systemShutdown(system: ActorSystem): Unit = ()
+class TransactionTracer(config: Config) extends ContextOnlyTracer {
+  def getContext(): Any = Transaction.value
 
-  def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Any =
-    Transaction.value
-
-  def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef, context: Any): Unit =
+  def setContext(context: Any): Unit =
     context match {
       case transaction: String ⇒ Transaction.value = transaction
       case _                   ⇒
     }
 
-  def actorCompleted(actorRef: ActorRef, message: Any, sender: ActorRef): Unit =
-    Transaction.clear()
+  def clearContext(): Unit = Transaction.clear()
 
-  def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: Any): ByteString = {
+  def serializeContext(context: Any): ByteString = {
     context match {
       case transaction: String ⇒ ByteString(transaction, "UTF-8")
       case _                   ⇒ ByteString.empty
     }
   }
 
-  def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: ByteString): Unit =
-    Transaction.value = context.utf8String
-
-  def remoteMessageCompleted(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit =
-    Transaction.clear()
+  def deserializeContext(context: ByteString): Any = context.utf8String
 }

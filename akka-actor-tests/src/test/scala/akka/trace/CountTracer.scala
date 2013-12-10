@@ -38,7 +38,7 @@ object CountTracer {
 /**
  * Tracer implementation that counts the calls to the SPI. For testing.
  */
-class CountTracer(config: Config) extends Tracer {
+class CountTracer(config: Config) extends NoContextTracer {
   val counts = new CountTracer.Counts
 
   def systemStarted(system: ActorSystem): Unit =
@@ -47,25 +47,18 @@ class CountTracer(config: Config) extends Tracer {
   def systemShutdown(system: ActorSystem): Unit =
     counts.systemShutdown.incrementAndGet
 
-  def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Any = {
+  def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Unit =
     counts.actorTold.incrementAndGet
-    Tracer.emptyContext
-  }
 
-  def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef, context: Any): Unit =
+  def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef): Unit =
     counts.actorReceived.incrementAndGet
 
   def actorCompleted(actorRef: ActorRef, message: Any, sender: ActorRef): Unit =
     counts.actorCompleted.incrementAndGet
 
-  def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: Any): ByteString = {
+  def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit =
     counts.remoteMessageSent.incrementAndGet
-    ByteString.empty
-  }
 
-  def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, contextBytes: ByteString): Unit =
+  def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit =
     counts.remoteMessageReceived.incrementAndGet
-
-  def remoteMessageCompleted(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit =
-    counts.remoteMessageCompleted.incrementAndGet
 }

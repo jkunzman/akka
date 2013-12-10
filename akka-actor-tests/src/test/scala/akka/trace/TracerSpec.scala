@@ -13,30 +13,8 @@ import scala.concurrent.duration._
 object TracerSpec {
   val testConfig: Config = ConfigFactory.parseString("""
     # print tracer can be added for debugging: "akka.trace.PrintTracer"
-    akka.tracers = ["akka.trace.TracerSpec$MessageTracer", "akka.trace.CountTracer"]
+    akka.tracers = ["akka.trace.CountTracer"]
   """)
-
-  /**
-   * Tracer that checks the message context passing between send and receive.
-   */
-  class MessageTracer(config: Config) extends EmptyTracer {
-    case class MessageContext(path: String, message: String)
-
-    def checkMessageContext(context: Any, actorRef: ActorRef, message: Any): Unit = {
-      val messageContext = context match {
-        case mc: MessageContext ⇒ mc
-        case _                  ⇒ sys.error("No message context attached")
-      }
-      assert(messageContext.path == actorRef.path.toString)
-      assert(messageContext.message == message.toString)
-    }
-
-    override def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Any =
-      MessageContext(actorRef.path.toString, message.toString)
-
-    override def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef, context: Any): Unit =
-      checkMessageContext(context, actorRef, message)
-  }
 }
 
 class TracerSpec extends AkkaSpec(TracerSpec.testConfig) with ImplicitSender with DefaultTimeout {

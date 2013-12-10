@@ -61,7 +61,11 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
 
     def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender]"
 
-    if (system.hasTracer) system.tracer.remoteMessageReceived(recipient, payload, serializedMessage.getSerializedSize, sender, serializedContext)
+    if (system.hasTracer) {
+      val context = system.tracer.deserializeContext(serializedContext)
+      system.tracer.setContext(context)
+      system.tracer.remoteMessageReceived(recipient, payload, serializedMessage.getSerializedSize, sender)
+    }
 
     recipient match {
 
@@ -104,7 +108,7 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
 
     }
 
-    if (system.hasTracer) system.tracer.remoteMessageCompleted(recipient, payload, serializedMessage.getSerializedSize, sender)
+    if (system.hasTracer) system.tracer.clearContext()
   }
 
 }
@@ -585,16 +589,10 @@ private[remote] class EndpointWriter(
 
             val serializedMessage = serializeMessage(msg)
 
-            val serializedContext = if (extendedSystem.hasTracer) {
-              extendedSystem.tracer.remoteMessageSent(
-                recipient,
-                msg,
-                serializedMessage.getSerializedSize,
-                senderOption.getOrElse(extendedSystem.deadLetters),
-                traceContext)
-            } else {
-              ByteString.empty
-            }
+            val serializedContext = if (extendedSystem.hasTracer) extendedSystem.tracer.serializeContext(traceContext) else ByteString.empty
+
+            if (extendedSystem.hasTracer)
+              extendedSystem.tracer.remoteMessageSent(recipient, msg, serializedMessage.getSerializedSize, senderOption.getOrElse(extendedSystem.deadLetters))
 
             val pdu = codec.constructMessage(
               recipient.localAddressToUse,

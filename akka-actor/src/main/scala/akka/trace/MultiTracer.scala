@@ -39,25 +39,18 @@ class MultiTracer(val tracers: immutable.Seq[Tracer]) extends Tracer {
     }
   }
 
-  def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Any = {
-    val builder = Vector.newBuilder[Any]
+  def actorTold(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = {
     var i = 0
     while (i < length) {
-      builder += _tracers(i).actorTold(actorRef, message, sender)
+      _tracers(i).actorTold(actorRef, message, sender)
       i += 1
     }
-    builder.result
   }
 
-  def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef, context: Any): Unit = {
-    val contexts: Vector[Any] = context match {
-      case v: Vector[_] ⇒ v
-      case _            ⇒ Vector.empty[Any]
-    }
+  def actorReceived(actorRef: ActorRef, message: Any, sender: ActorRef): Unit = {
     var i = 0
     while (i < length) {
-      val ctx = if (contexts.isDefinedAt(i)) contexts(i) else Tracer.emptyContext
-      _tracers(i).actorReceived(actorRef, message, sender, ctx)
+      _tracers(i).actorReceived(actorRef, message, sender)
       i += 1
     }
   }
@@ -70,7 +63,54 @@ class MultiTracer(val tracers: immutable.Seq[Tracer]) extends Tracer {
     }
   }
 
-  def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: Any): ByteString = {
+  def remoteMessageSent(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = {
+    var i = 0
+    while (i < length) {
+      _tracers(i).remoteMessageSent(actorRef, message, size, sender)
+      i += 1
+    }
+  }
+
+  def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = {
+    var i = 0
+    while (i < length) {
+      _tracers(i).remoteMessageReceived(actorRef, message, size, sender)
+      i += 1
+    }
+  }
+
+  def getContext(): Any = {
+    val builder = Vector.newBuilder[Any]
+    var i = 0
+    while (i < length) {
+      builder += _tracers(i).getContext()
+      i += 1
+    }
+    builder.result
+  }
+
+  def setContext(context: Any): Unit = {
+    val contexts: Vector[Any] = context match {
+      case v: Vector[_] ⇒ v
+      case _            ⇒ Vector.empty[Any]
+    }
+    var i = 0
+    while (i < length) {
+      val ctx = if (contexts.isDefinedAt(i)) contexts(i) else Tracer.emptyContext
+      _tracers(i).setContext(ctx)
+      i += 1
+    }
+  }
+
+  def clearContext(): Unit = {
+    var i = 0
+    while (i < length) {
+      _tracers(i).clearContext()
+      i += 1
+    }
+  }
+
+  def serializeContext(context: Any): ByteString = {
     val builder = ByteString.newBuilder
     val contexts: Vector[Any] = context match {
       case v: Vector[_] ⇒ v
@@ -79,7 +119,7 @@ class MultiTracer(val tracers: immutable.Seq[Tracer]) extends Tracer {
     var i = 0
     while (i < length) {
       val ctx = if (contexts.isDefinedAt(i)) contexts(i) else Tracer.emptyContext
-      val bytes = _tracers(i).remoteMessageSent(actorRef, message, size, sender, ctx)
+      val bytes = _tracers(i).serializeContext(ctx)
       builder.putInt(bytes.size)
       builder ++= bytes
       i += 1
@@ -87,13 +127,15 @@ class MultiTracer(val tracers: immutable.Seq[Tracer]) extends Tracer {
     builder.result
   }
 
-  def remoteMessageReceived(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef, context: ByteString): Unit = {
+  def deserializeContext(context: ByteString): Any = {
     val iterator = context.iterator
+    val builder = Vector.newBuilder[Any]
     var i = 0
     while (i < length) {
-      _tracers(i).remoteMessageReceived(actorRef, message, size, sender, getContextBytes(iterator))
+      builder += _tracers(i).deserializeContext(getContextBytes(iterator))
       i += 1
     }
+    builder.result
   }
 
   def getContextBytes(iterator: ByteIterator): ByteString = {
@@ -104,14 +146,6 @@ class MultiTracer(val tracers: immutable.Seq[Tracer]) extends Tracer {
       ByteString(bytes)
     } catch {
       case _: java.util.NoSuchElementException ⇒ ByteString.empty
-    }
-  }
-
-  def remoteMessageCompleted(actorRef: ActorRef, message: Any, size: Int, sender: ActorRef): Unit = {
-    var i = 0
-    while (i < length) {
-      _tracers(i).remoteMessageCompleted(actorRef, message, size, sender)
-      i += 1
     }
   }
 }
