@@ -8,7 +8,7 @@
 <div>
 <p>
 This tutorial contains 4 samples illustrating different 
-<a href="http://doc.akka.io/docs/akka/2.2.3/scala/cluster-usage.html" target="_blank">Akka cluster</a> features.
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/cluster-usage.html" target="_blank">Akka cluster</a> features.
 </p>
 <ul>
 <li>Subscribe to cluster membership events</li>
@@ -32,7 +32,7 @@ normally also be added to your application.conf file.
 </p>
 
 <p>
-The seed nodes are configured contact points for initial, automatic, join of the cluster.
+The seed nodes are configured contact points which newly started nodes will try to connect with in order to join the cluster.
 </p>
 
 <p>
@@ -54,7 +54,7 @@ actor.
 
 <p>
 You can read more about the cluster concepts in the 
-<a href="http://doc.akka.io/docs/akka/2.2.3/scala/cluster-usage.html" target="_blank">documentation</a>.
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/cluster-usage.html" target="_blank">documentation</a>.
 </p>
 
 <p>
@@ -75,7 +75,7 @@ In the first terminal window, start the first seed node with the following comma
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.simple.SimpleClusterApp 2551"		
+  "runMain sample.cluster.simple.SimpleClusterApp 2551"		
 </code></pre>
 
 <p>
@@ -89,7 +89,7 @@ In the second terminal window, start the second seed node with the following com
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.simple.SimpleClusterApp 2552"		
+  "runMain sample.cluster.simple.SimpleClusterApp 2552"		
 </code></pre>
 
 <p>
@@ -108,7 +108,7 @@ Start another node in the third terminal window with the following command (on o
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.simple.SimpleClusterApp 0"		
+  "runMain sample.cluster.simple.SimpleClusterApp 0"		
 </code></pre>
 
 <p>
@@ -143,7 +143,7 @@ that happen in the cluster.
 <p>
 In the previous sample we saw how to subscribe to cluster membership events.
 You can read more about it in the 
-<a href="http://doc.akka.io/docs/akka/2.2.3/scala/cluster-usage.html#Subscribe_to_Cluster_Events" target="_blank">documentation</a>.
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/cluster-usage.html#Subscribe_to_Cluster_Events" target="_blank">documentation</a>.
 How can cluster membership events be used?
 </p>
 
@@ -204,27 +204,27 @@ interesting to run them in separate processes. Stop the application in the
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.transformation.TransformationFrontend 2551"		
+  "runMain sample.cluster.transformation.TransformationFrontend 2551"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.transformation.TransformationBackend 2552"		
+  "runMain sample.cluster.transformation.TransformationBackend 2552"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.transformation.TransformationBackend 0"		
+  "runMain sample.cluster.transformation.TransformationBackend 0"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.transformation.TransformationBackend 0"		
+  "runMain sample.cluster.transformation.TransformationBackend 0"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.transformation.TransformationFrontend 0"		
+  "runMain sample.cluster.transformation.TransformationFrontend 0"		
 </code></pre>
 
 </div>
@@ -233,7 +233,7 @@ interesting to run them in separate processes. Stop the application in the
 <h2>Cluster Aware Routers</h2>
 
 <p>
-All <a href="http://doc.akka.io/docs/akka/2.2.3/scala/routing.html" target="_blank">routers</a>
+All <a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/routing.html" target="_blank">routers</a>
 can be made aware of member nodes in the cluster, i.e. deploying new routees or looking up routees
 on nodes in the cluster.
 When a node becomes unreachable or leaves the cluster the routees of that node are
@@ -244,7 +244,7 @@ when a node becomes reachable again, after having been unreachable.
 
 <p>
 You can read more about cluster aware routers in the 
-<a href="http://doc.akka.io/docs/akka/2.2.3/scala/cluster-usage.html#Cluster_Aware_Routers" target="_blank">documentation</a>.
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/cluster-usage.html#Cluster_Aware_Routers" target="_blank">documentation</a>.
 </p>
 
 <p>
@@ -258,7 +258,8 @@ Let's take a look at a few samples that make use of cluster aware routers.
 
 <p>
 Let's take a look at how to use a cluster aware router with a group of routees, 
-i.e. router sending to the paths of the routees.
+i.e. a router which does not create its routees but instead forwards incoming messages to a given 
+set of actors created elsewhere.
 </p>
 
 <p>
@@ -314,22 +315,22 @@ interesting to run them in separate processes. Stop the application in the
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.stats.StatsSample 2551"		
+  "runMain sample.cluster.stats.StatsSample 2551"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.stats.StatsSample 2552"		
+  "runMain sample.cluster.stats.StatsSample 2552"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.stats.StatsSampleClient"		
+  "runMain sample.cluster.stats.StatsSampleClient"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.stats.StatsSample 0"		
+  "runMain sample.cluster.stats.StatsSample 0"		
 </code></pre>
 
 </div>
@@ -339,12 +340,12 @@ interesting to run them in separate processes. Stop the application in the
 
 <p>
 Let's take a look at how to use a cluster aware router on single master node that creates
-and deploys workers.
+and deploys workers instead of looking them up.
 </p>
 
 <p>
 Open <a href="#code/src/main/scala/sample/cluster/stats/StatsSampleOneMaster.scala" class="shortcut">StatsSampleOneMaster.scala</a>.
-To keep track of a single master we use the <a href="http://doc.akka.io/docs/akka/2.2.3/contrib/cluster-singleton.html" target="_blank">Cluster Singleton</a>
+To keep track of a single master we use the <a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/contrib/cluster-singleton.html" target="_blank">Cluster Singleton</a>
 in the contrib module. The <code>ClusterSingletonManager</code> is started on each node.
 </p>
 
@@ -379,22 +380,22 @@ interesting to run them in separate processes. Stop the application in the
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.stats.StatsSampleOneMaster 2551"		
+  "runMain sample.cluster.stats.StatsSampleOneMaster 2551"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.stats.StatsSampleOneMaster 2552"		
+  "runMain sample.cluster.stats.StatsSampleOneMaster 2552"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.stats.StatsSampleOneMasterClient"		
+  "runMain sample.cluster.stats.StatsSampleOneMasterClient"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.stats.StatsSampleOneMaster 0"		
+  "runMain sample.cluster.stats.StatsSampleOneMaster 0"		
 </code></pre>
 
 </div>
@@ -410,7 +411,7 @@ the <code>AdaptiveLoadBalancingPool</code> and <code>AdaptiveLoadBalancingGroup<
 
 <p>
 You can read more about cluster metrics in the 
-<a href="http://doc.akka.io/docs/akka/2.2.3/scala/cluster-usage.html#Cluster_Metrics" target="_blank">documentation</a>.
+<a href="http://doc.akka.io/docs/akka/2.3-SNAPSHOT/scala/cluster-usage.html#Cluster_Metrics" target="_blank">documentation</a>.
 </p>
 
 <p>
@@ -452,22 +453,22 @@ interesting to run them in separate processes. Stop the application in the
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.factorial.FactorialBackend 2551"		
+  "runMain sample.cluster.factorial.FactorialBackend 2551"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.factorial.FactorialBackend 2552"		
+  "runMain sample.cluster.factorial.FactorialBackend 2552"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.factorial.FactorialBackend 0"		
+  "runMain sample.cluster.factorial.FactorialBackend 0"		
 </code></pre>
 
 <pre><code>
 &lt;path to activator dir&gt;/activator 
-  "run-main sample.cluster.factorial.FactorialFrontend 0"		
+  "runMain sample.cluster.factorial.FactorialFrontend 0"		
 </code></pre>
 
 <p>

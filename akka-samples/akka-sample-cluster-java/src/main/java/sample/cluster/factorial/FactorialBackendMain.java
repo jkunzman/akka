@@ -9,11 +9,10 @@ public class FactorialBackendMain {
 
   public static void main(String[] args) {
     // Override the configuration of the port when specified as program argument
-    final Config config = (args.length > 0 ? ConfigFactory.parseString(String
-        .format("akka.remote.netty.tcp.port=%s", args[0])) : ConfigFactory
-        .empty()).withFallback(
-        ConfigFactory.parseString("akka.cluster.roles = [backend]"))
-        .withFallback(ConfigFactory.load("factorial"));
+    final String port = args.length > 0 ? args[0] : "0";
+    final Config config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
+      withFallback(ConfigFactory.parseString("akka.cluster.roles = [backend]")).
+      withFallback(ConfigFactory.load("factorial"));
 
     ActorSystem system = ActorSystem.create("ClusterSystem", config);
 
