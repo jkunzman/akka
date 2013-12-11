@@ -38,7 +38,6 @@ private[remote] object AkkaPduCodec {
                      recipientAddress: Address,
                      serializedMessage: SerializedMessage,
                      senderOption: Option[ActorRef],
-                     serializedContext: ByteString,
                      seqOption: Option[SeqNo]) extends HasSequenceNumber {
 
     def reliableDeliveryEnabled = seqOption.isDefined
@@ -98,7 +97,6 @@ private[remote] trait AkkaPduCodec {
     recipient: ActorRef,
     serializedMessage: SerializedMessage,
     senderOption: Option[ActorRef],
-    serializedContext: ByteString,
     seqOption: Option[SeqNo] = None,
     ackOption: Option[Ack] = None): ByteString
 
@@ -123,7 +121,6 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     recipient: ActorRef,
     serializedMessage: SerializedMessage,
     senderOption: Option[ActorRef],
-    serializedContext: ByteString,
     seqOption: Option[SeqNo] = None,
     ackOption: Option[Ack] = None): ByteString = {
 
@@ -136,7 +133,6 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     seqOption foreach { seq ⇒ envelopeBuilder.setSeq(seq.rawValue) }
     ackOption foreach { ack ⇒ ackAndEnvelopeBuilder.setAck(ackBuilder(ack)) }
     envelopeBuilder.setMessage(serializedMessage)
-    envelopeBuilder.setTraceContext(PByteString.copyFrom(serializedContext.asByteBuffer))
     ackAndEnvelopeBuilder.setEnvelope(envelopeBuilder)
 
     ByteString.ByteString1C(ackAndEnvelopeBuilder.build.toByteArray) //Reuse Byte Array (naughty!)
@@ -198,9 +194,6 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
         senderOption =
           if (msgPdu.hasSender) Some(provider.resolveActorRefWithLocalAddress(msgPdu.getSender.getPath, localAddress))
           else None,
-        serializedContext =
-          if (msgPdu.hasTraceContext) ByteString(msgPdu.getTraceContext.asReadOnlyByteBuffer())
-          else ByteString.empty,
         seqOption =
           if (msgPdu.hasSeq) Some(SeqNo(msgPdu.getSeq)) else None))
     } else None

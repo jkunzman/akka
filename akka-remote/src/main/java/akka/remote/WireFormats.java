@@ -915,16 +915,6 @@ public final class WireFormats {
      * <code>optional fixed64 seq = 5;</code>
      */
     long getSeq();
-
-    // optional bytes traceContext = 6;
-    /**
-     * <code>optional bytes traceContext = 6;</code>
-     */
-    boolean hasTraceContext();
-    /**
-     * <code>optional bytes traceContext = 6;</code>
-     */
-    com.google.protobuf.ByteString getTraceContext();
   }
   /**
    * Protobuf type {@code RemoteEnvelope}
@@ -1024,11 +1014,6 @@ public final class WireFormats {
             case 41: {
               bitField0_ |= 0x00000008;
               seq_ = input.readFixed64();
-              break;
-            }
-            case 50: {
-              bitField0_ |= 0x00000010;
-              traceContext_ = input.readBytes();
               break;
             }
           }
@@ -1153,28 +1138,11 @@ public final class WireFormats {
       return seq_;
     }
 
-    // optional bytes traceContext = 6;
-    public static final int TRACECONTEXT_FIELD_NUMBER = 6;
-    private com.google.protobuf.ByteString traceContext_;
-    /**
-     * <code>optional bytes traceContext = 6;</code>
-     */
-    public boolean hasTraceContext() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
-    }
-    /**
-     * <code>optional bytes traceContext = 6;</code>
-     */
-    public com.google.protobuf.ByteString getTraceContext() {
-      return traceContext_;
-    }
-
     private void initFields() {
       recipient_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
       message_ = akka.remote.WireFormats.SerializedMessage.getDefaultInstance();
       sender_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
       seq_ = 0L;
-      traceContext_ = com.google.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1222,9 +1190,6 @@ public final class WireFormats {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeFixed64(5, seq_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeBytes(6, traceContext_);
-      }
       getUnknownFields().writeTo(output);
     }
 
@@ -1249,10 +1214,6 @@ public final class WireFormats {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeFixed64Size(5, seq_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(6, traceContext_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1398,8 +1359,6 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000004);
         seq_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000008);
-        traceContext_ = com.google.protobuf.ByteString.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -1456,10 +1415,6 @@ public final class WireFormats {
           to_bitField0_ |= 0x00000008;
         }
         result.seq_ = seq_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000010;
-        }
-        result.traceContext_ = traceContext_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1487,9 +1442,6 @@ public final class WireFormats {
         }
         if (other.hasSeq()) {
           setSeq(other.getSeq());
-        }
-        if (other.hasTraceContext()) {
-          setTraceContext(other.getTraceContext());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1920,42 +1872,6 @@ public final class WireFormats {
       public Builder clearSeq() {
         bitField0_ = (bitField0_ & ~0x00000008);
         seq_ = 0L;
-        onChanged();
-        return this;
-      }
-
-      // optional bytes traceContext = 6;
-      private com.google.protobuf.ByteString traceContext_ = com.google.protobuf.ByteString.EMPTY;
-      /**
-       * <code>optional bytes traceContext = 6;</code>
-       */
-      public boolean hasTraceContext() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      /**
-       * <code>optional bytes traceContext = 6;</code>
-       */
-      public com.google.protobuf.ByteString getTraceContext() {
-        return traceContext_;
-      }
-      /**
-       * <code>optional bytes traceContext = 6;</code>
-       */
-      public Builder setTraceContext(com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000010;
-        traceContext_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional bytes traceContext = 6;</code>
-       */
-      public Builder clearTraceContext() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        traceContext_ = getDefaultInstance().getTraceContext();
         onChanged();
         return this;
       }
@@ -3608,6 +3524,631 @@ public final class WireFormats {
     }
 
     // @@protoc_insertion_point(class_scope:SerializedMessage)
+  }
+
+  public interface TraceEnvelopeOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+
+    // required .SerializedMessage message = 1;
+    /**
+     * <code>required .SerializedMessage message = 1;</code>
+     */
+    boolean hasMessage();
+    /**
+     * <code>required .SerializedMessage message = 1;</code>
+     */
+    akka.remote.WireFormats.SerializedMessage getMessage();
+    /**
+     * <code>required .SerializedMessage message = 1;</code>
+     */
+    akka.remote.WireFormats.SerializedMessageOrBuilder getMessageOrBuilder();
+
+    // required bytes context = 2;
+    /**
+     * <code>required bytes context = 2;</code>
+     */
+    boolean hasContext();
+    /**
+     * <code>required bytes context = 2;</code>
+     */
+    com.google.protobuf.ByteString getContext();
+  }
+  /**
+   * Protobuf type {@code TraceEnvelope}
+   *
+   * <pre>
+   **
+   * Trace envelope for adding trace context.
+   * </pre>
+   */
+  public static final class TraceEnvelope extends
+      com.google.protobuf.GeneratedMessage
+      implements TraceEnvelopeOrBuilder {
+    // Use TraceEnvelope.newBuilder() to construct.
+    private TraceEnvelope(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private TraceEnvelope(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final TraceEnvelope defaultInstance;
+    public static TraceEnvelope getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public TraceEnvelope getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private TraceEnvelope(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              akka.remote.WireFormats.SerializedMessage.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                subBuilder = message_.toBuilder();
+              }
+              message_ = input.readMessage(akka.remote.WireFormats.SerializedMessage.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(message_);
+                message_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000001;
+              break;
+            }
+            case 18: {
+              bitField0_ |= 0x00000002;
+              context_ = input.readBytes();
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.remote.WireFormats.internal_static_TraceEnvelope_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.remote.WireFormats.internal_static_TraceEnvelope_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.remote.WireFormats.TraceEnvelope.class, akka.remote.WireFormats.TraceEnvelope.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<TraceEnvelope> PARSER =
+        new com.google.protobuf.AbstractParser<TraceEnvelope>() {
+      public TraceEnvelope parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new TraceEnvelope(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<TraceEnvelope> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required .SerializedMessage message = 1;
+    public static final int MESSAGE_FIELD_NUMBER = 1;
+    private akka.remote.WireFormats.SerializedMessage message_;
+    /**
+     * <code>required .SerializedMessage message = 1;</code>
+     */
+    public boolean hasMessage() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required .SerializedMessage message = 1;</code>
+     */
+    public akka.remote.WireFormats.SerializedMessage getMessage() {
+      return message_;
+    }
+    /**
+     * <code>required .SerializedMessage message = 1;</code>
+     */
+    public akka.remote.WireFormats.SerializedMessageOrBuilder getMessageOrBuilder() {
+      return message_;
+    }
+
+    // required bytes context = 2;
+    public static final int CONTEXT_FIELD_NUMBER = 2;
+    private com.google.protobuf.ByteString context_;
+    /**
+     * <code>required bytes context = 2;</code>
+     */
+    public boolean hasContext() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required bytes context = 2;</code>
+     */
+    public com.google.protobuf.ByteString getContext() {
+      return context_;
+    }
+
+    private void initFields() {
+      message_ = akka.remote.WireFormats.SerializedMessage.getDefaultInstance();
+      context_ = com.google.protobuf.ByteString.EMPTY;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasMessage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasContext()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!getMessage().isInitialized()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeMessage(1, message_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBytes(2, context_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(1, message_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(2, context_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.remote.WireFormats.TraceEnvelope parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.WireFormats.TraceEnvelope parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.WireFormats.TraceEnvelope parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.WireFormats.TraceEnvelope parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.WireFormats.TraceEnvelope parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.WireFormats.TraceEnvelope parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.remote.WireFormats.TraceEnvelope parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.remote.WireFormats.TraceEnvelope parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.remote.WireFormats.TraceEnvelope parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.WireFormats.TraceEnvelope parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.remote.WireFormats.TraceEnvelope prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code TraceEnvelope}
+     *
+     * <pre>
+     **
+     * Trace envelope for adding trace context.
+     * </pre>
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.remote.WireFormats.TraceEnvelopeOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.remote.WireFormats.internal_static_TraceEnvelope_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.remote.WireFormats.internal_static_TraceEnvelope_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.remote.WireFormats.TraceEnvelope.class, akka.remote.WireFormats.TraceEnvelope.Builder.class);
+      }
+
+      // Construct using akka.remote.WireFormats.TraceEnvelope.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getMessageFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        if (messageBuilder_ == null) {
+          message_ = akka.remote.WireFormats.SerializedMessage.getDefaultInstance();
+        } else {
+          messageBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000001);
+        context_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.remote.WireFormats.internal_static_TraceEnvelope_descriptor;
+      }
+
+      public akka.remote.WireFormats.TraceEnvelope getDefaultInstanceForType() {
+        return akka.remote.WireFormats.TraceEnvelope.getDefaultInstance();
+      }
+
+      public akka.remote.WireFormats.TraceEnvelope build() {
+        akka.remote.WireFormats.TraceEnvelope result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.remote.WireFormats.TraceEnvelope buildPartial() {
+        akka.remote.WireFormats.TraceEnvelope result = new akka.remote.WireFormats.TraceEnvelope(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        if (messageBuilder_ == null) {
+          result.message_ = message_;
+        } else {
+          result.message_ = messageBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.context_ = context_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof akka.remote.WireFormats.TraceEnvelope) {
+          return mergeFrom((akka.remote.WireFormats.TraceEnvelope)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.remote.WireFormats.TraceEnvelope other) {
+        if (other == akka.remote.WireFormats.TraceEnvelope.getDefaultInstance()) return this;
+        if (other.hasMessage()) {
+          mergeMessage(other.getMessage());
+        }
+        if (other.hasContext()) {
+          setContext(other.getContext());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasMessage()) {
+          
+          return false;
+        }
+        if (!hasContext()) {
+          
+          return false;
+        }
+        if (!getMessage().isInitialized()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.remote.WireFormats.TraceEnvelope parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.remote.WireFormats.TraceEnvelope) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required .SerializedMessage message = 1;
+      private akka.remote.WireFormats.SerializedMessage message_ = akka.remote.WireFormats.SerializedMessage.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder> messageBuilder_;
+      /**
+       * <code>required .SerializedMessage message = 1;</code>
+       */
+      public boolean hasMessage() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required .SerializedMessage message = 1;</code>
+       */
+      public akka.remote.WireFormats.SerializedMessage getMessage() {
+        if (messageBuilder_ == null) {
+          return message_;
+        } else {
+          return messageBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .SerializedMessage message = 1;</code>
+       */
+      public Builder setMessage(akka.remote.WireFormats.SerializedMessage value) {
+        if (messageBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          message_ = value;
+          onChanged();
+        } else {
+          messageBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .SerializedMessage message = 1;</code>
+       */
+      public Builder setMessage(
+          akka.remote.WireFormats.SerializedMessage.Builder builderForValue) {
+        if (messageBuilder_ == null) {
+          message_ = builderForValue.build();
+          onChanged();
+        } else {
+          messageBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .SerializedMessage message = 1;</code>
+       */
+      public Builder mergeMessage(akka.remote.WireFormats.SerializedMessage value) {
+        if (messageBuilder_ == null) {
+          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+              message_ != akka.remote.WireFormats.SerializedMessage.getDefaultInstance()) {
+            message_ =
+              akka.remote.WireFormats.SerializedMessage.newBuilder(message_).mergeFrom(value).buildPartial();
+          } else {
+            message_ = value;
+          }
+          onChanged();
+        } else {
+          messageBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .SerializedMessage message = 1;</code>
+       */
+      public Builder clearMessage() {
+        if (messageBuilder_ == null) {
+          message_ = akka.remote.WireFormats.SerializedMessage.getDefaultInstance();
+          onChanged();
+        } else {
+          messageBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+      /**
+       * <code>required .SerializedMessage message = 1;</code>
+       */
+      public akka.remote.WireFormats.SerializedMessage.Builder getMessageBuilder() {
+        bitField0_ |= 0x00000001;
+        onChanged();
+        return getMessageFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .SerializedMessage message = 1;</code>
+       */
+      public akka.remote.WireFormats.SerializedMessageOrBuilder getMessageOrBuilder() {
+        if (messageBuilder_ != null) {
+          return messageBuilder_.getMessageOrBuilder();
+        } else {
+          return message_;
+        }
+      }
+      /**
+       * <code>required .SerializedMessage message = 1;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder> 
+          getMessageFieldBuilder() {
+        if (messageBuilder_ == null) {
+          messageBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder>(
+                  message_,
+                  getParentForChildren(),
+                  isClean());
+          message_ = null;
+        }
+        return messageBuilder_;
+      }
+
+      // required bytes context = 2;
+      private com.google.protobuf.ByteString context_ = com.google.protobuf.ByteString.EMPTY;
+      /**
+       * <code>required bytes context = 2;</code>
+       */
+      public boolean hasContext() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required bytes context = 2;</code>
+       */
+      public com.google.protobuf.ByteString getContext() {
+        return context_;
+      }
+      /**
+       * <code>required bytes context = 2;</code>
+       */
+      public Builder setContext(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        context_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required bytes context = 2;</code>
+       */
+      public Builder clearContext() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        context_ = getDefaultInstance().getContext();
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:TraceEnvelope)
+    }
+
+    static {
+      defaultInstance = new TraceEnvelope(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:TraceEnvelope)
   }
 
   public interface DaemonMsgCreateDataOrBuilder
@@ -9586,6 +10127,11 @@ public final class WireFormats {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_SerializedMessage_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_TraceEnvelope_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_TraceEnvelope_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_DaemonMsgCreateData_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -9631,36 +10177,37 @@ public final class WireFormats {
     java.lang.String[] descriptorData = {
       "\n\021WireFormats.proto\"_\n\027AckAndEnvelopeCon" +
       "tainer\022!\n\003ack\030\001 \001(\0132\024.AcknowledgementInf" +
-      "o\022!\n\010envelope\030\002 \001(\0132\017.RemoteEnvelope\"\231\001\n" +
+      "o\022!\n\010envelope\030\002 \001(\0132\017.RemoteEnvelope\"\203\001\n" +
       "\016RemoteEnvelope\022 \n\trecipient\030\001 \002(\0132\r.Act" +
       "orRefData\022#\n\007message\030\002 \002(\0132\022.SerializedM" +
       "essage\022\035\n\006sender\030\004 \001(\0132\r.ActorRefData\022\013\n" +
-      "\003seq\030\005 \001(\006\022\024\n\014traceContext\030\006 \001(\014\";\n\023Ackn" +
-      "owledgementInfo\022\025\n\rcumulativeAck\030\001 \002(\006\022\r" +
-      "\n\005nacks\030\002 \003(\006\"\034\n\014ActorRefData\022\014\n\004path\030\001 " +
-      "\002(\t\"S\n\021SerializedMessage\022\017\n\007message\030\001 \002(",
-      "\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageManife" +
-      "st\030\003 \001(\014\"~\n\023DaemonMsgCreateData\022\031\n\005props" +
-      "\030\001 \002(\0132\n.PropsData\022\033\n\006deploy\030\002 \002(\0132\013.Dep" +
-      "loyData\022\014\n\004path\030\003 \002(\t\022!\n\nsupervisor\030\004 \002(" +
-      "\0132\r.ActorRefData\"V\n\tPropsData\022\033\n\006deploy\030" +
-      "\002 \002(\0132\013.DeployData\022\r\n\005clazz\030\003 \002(\t\022\014\n\004arg" +
-      "s\030\004 \003(\014\022\017\n\007classes\030\005 \003(\t\"c\n\nDeployData\022\014" +
-      "\n\004path\030\001 \002(\t\022\016\n\006config\030\002 \001(\014\022\024\n\014routerCo" +
-      "nfig\030\003 \001(\014\022\r\n\005scope\030\004 \001(\014\022\022\n\ndispatcher\030" +
-      "\005 \001(\t\"P\n\023AkkaProtocolMessage\022\017\n\007payload\030",
-      "\001 \001(\014\022(\n\013instruction\030\002 \001(\0132\023.AkkaControl" +
-      "Message\"b\n\022AkkaControlMessage\022!\n\013command" +
-      "Type\030\001 \002(\0162\014.CommandType\022)\n\rhandshakeInf" +
-      "o\030\002 \001(\0132\022.AkkaHandshakeInfo\"N\n\021AkkaHands" +
-      "hakeInfo\022\034\n\006origin\030\001 \002(\0132\014.AddressData\022\013" +
-      "\n\003uid\030\002 \002(\006\022\016\n\006cookie\030\003 \001(\t\"O\n\013AddressDa" +
-      "ta\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004" +
-      "port\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t*{\n\013CommandT" +
-      "ype\022\r\n\tASSOCIATE\020\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\t" +
-      "HEARTBEAT\020\003\022\036\n\032DISASSOCIATE_SHUTTING_DOW",
-      "N\020\004\022\034\n\030DISASSOCIATE_QUARANTINED\020\005B\017\n\013akk" +
-      "a.remoteH\001"
+      "\003seq\030\005 \001(\006\";\n\023AcknowledgementInfo\022\025\n\rcum" +
+      "ulativeAck\030\001 \002(\006\022\r\n\005nacks\030\002 \003(\006\"\034\n\014Actor" +
+      "RefData\022\014\n\004path\030\001 \002(\t\"S\n\021SerializedMessa" +
+      "ge\022\017\n\007message\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(",
+      "\005\022\027\n\017messageManifest\030\003 \001(\014\"E\n\rTraceEnvel" +
+      "ope\022#\n\007message\030\001 \002(\0132\022.SerializedMessage" +
+      "\022\017\n\007context\030\002 \002(\014\"~\n\023DaemonMsgCreateData" +
+      "\022\031\n\005props\030\001 \002(\0132\n.PropsData\022\033\n\006deploy\030\002 " +
+      "\002(\0132\013.DeployData\022\014\n\004path\030\003 \002(\t\022!\n\nsuperv" +
+      "isor\030\004 \002(\0132\r.ActorRefData\"V\n\tPropsData\022\033" +
+      "\n\006deploy\030\002 \002(\0132\013.DeployData\022\r\n\005clazz\030\003 \002" +
+      "(\t\022\014\n\004args\030\004 \003(\014\022\017\n\007classes\030\005 \003(\t\"c\n\nDep" +
+      "loyData\022\014\n\004path\030\001 \002(\t\022\016\n\006config\030\002 \001(\014\022\024\n" +
+      "\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 \001(\014\022\022\n\ndi",
+      "spatcher\030\005 \001(\t\"P\n\023AkkaProtocolMessage\022\017\n" +
+      "\007payload\030\001 \001(\014\022(\n\013instruction\030\002 \001(\0132\023.Ak" +
+      "kaControlMessage\"b\n\022AkkaControlMessage\022!" +
+      "\n\013commandType\030\001 \002(\0162\014.CommandType\022)\n\rhan" +
+      "dshakeInfo\030\002 \001(\0132\022.AkkaHandshakeInfo\"N\n\021" +
+      "AkkaHandshakeInfo\022\034\n\006origin\030\001 \002(\0132\014.Addr" +
+      "essData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030\003 \001(\t\"O\n\013" +
+      "AddressData\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030" +
+      "\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t*{\n" +
+      "\013CommandType\022\r\n\tASSOCIATE\020\001\022\020\n\014DISASSOCI",
+      "ATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DISASSOCIATE_SHU" +
+      "TTING_DOWN\020\004\022\034\n\030DISASSOCIATE_QUARANTINED" +
+      "\020\005B\017\n\013akka.remoteH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -9678,7 +10225,7 @@ public final class WireFormats {
           internal_static_RemoteEnvelope_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_RemoteEnvelope_descriptor,
-              new java.lang.String[] { "Recipient", "Message", "Sender", "Seq", "TraceContext", });
+              new java.lang.String[] { "Recipient", "Message", "Sender", "Seq", });
           internal_static_AcknowledgementInfo_descriptor =
             getDescriptor().getMessageTypes().get(2);
           internal_static_AcknowledgementInfo_fieldAccessorTable = new
@@ -9697,44 +10244,50 @@ public final class WireFormats {
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SerializedMessage_descriptor,
               new java.lang.String[] { "Message", "SerializerId", "MessageManifest", });
-          internal_static_DaemonMsgCreateData_descriptor =
+          internal_static_TraceEnvelope_descriptor =
             getDescriptor().getMessageTypes().get(5);
+          internal_static_TraceEnvelope_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_TraceEnvelope_descriptor,
+              new java.lang.String[] { "Message", "Context", });
+          internal_static_DaemonMsgCreateData_descriptor =
+            getDescriptor().getMessageTypes().get(6);
           internal_static_DaemonMsgCreateData_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_DaemonMsgCreateData_descriptor,
               new java.lang.String[] { "Props", "Deploy", "Path", "Supervisor", });
           internal_static_PropsData_descriptor =
-            getDescriptor().getMessageTypes().get(6);
+            getDescriptor().getMessageTypes().get(7);
           internal_static_PropsData_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PropsData_descriptor,
               new java.lang.String[] { "Deploy", "Clazz", "Args", "Classes", });
           internal_static_DeployData_descriptor =
-            getDescriptor().getMessageTypes().get(7);
+            getDescriptor().getMessageTypes().get(8);
           internal_static_DeployData_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_DeployData_descriptor,
               new java.lang.String[] { "Path", "Config", "RouterConfig", "Scope", "Dispatcher", });
           internal_static_AkkaProtocolMessage_descriptor =
-            getDescriptor().getMessageTypes().get(8);
+            getDescriptor().getMessageTypes().get(9);
           internal_static_AkkaProtocolMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AkkaProtocolMessage_descriptor,
               new java.lang.String[] { "Payload", "Instruction", });
           internal_static_AkkaControlMessage_descriptor =
-            getDescriptor().getMessageTypes().get(9);
+            getDescriptor().getMessageTypes().get(10);
           internal_static_AkkaControlMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AkkaControlMessage_descriptor,
               new java.lang.String[] { "CommandType", "HandshakeInfo", });
           internal_static_AkkaHandshakeInfo_descriptor =
-            getDescriptor().getMessageTypes().get(10);
+            getDescriptor().getMessageTypes().get(11);
           internal_static_AkkaHandshakeInfo_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AkkaHandshakeInfo_descriptor,
               new java.lang.String[] { "Origin", "Uid", "Cookie", });
           internal_static_AddressData_descriptor =
-            getDescriptor().getMessageTypes().get(11);
+            getDescriptor().getMessageTypes().get(12);
           internal_static_AddressData_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AddressData_descriptor,

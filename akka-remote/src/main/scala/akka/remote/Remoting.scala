@@ -200,8 +200,8 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     }
   }
 
-  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef, traceContext: Any): Unit = endpointManager match {
-    case Some(manager) ⇒ manager.tell(Send(message, senderOption, recipient, traceContext), sender = senderOption getOrElse Actor.noSender)
+  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = endpointManager match {
+    case Some(manager) ⇒ manager.tell(Send(message, senderOption, recipient), sender = senderOption getOrElse Actor.noSender)
     case None          ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send remote message but Remoting is not running.", null)
   }
 
@@ -237,7 +237,7 @@ private[remote] object EndpointManager {
   case class Listen(addressesPromise: Promise[Seq[(Transport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
-  case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef, traceContext: Any, seqOpt: Option[SeqNo] = None)
+  case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef, seqOpt: Option[SeqNo] = None)
     extends RemotingCommand with HasSequenceNumber {
     override def toString = s"Remote message $senderOption -> $recipient"
 
@@ -501,7 +501,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         case _ ⇒ // Ignore
       }
 
-    case s @ Send(message, senderOption, recipientRef, traceContext, _) ⇒
+    case s @ Send(message, senderOption, recipientRef, _) ⇒
       val recipientAddress = recipientRef.path.address
 
       def createAndRegisterWritingEndpoint(): ActorRef = endpoints.registerWritableEndpoint(recipientAddress, createEndpoint(

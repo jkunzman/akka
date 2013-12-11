@@ -289,6 +289,46 @@ abstract class Tracer {
 }
 
 /**
+ * Wrapper for messages with trace context added.
+ */
+case class TracedMessage(message: Any, context: Any) {
+  def messageRef: AnyRef = message.asInstanceOf[AnyRef]
+}
+
+/**
+ * Wrapping and unwrapping traced messages.
+ */
+object TracedMessage {
+  /**
+   * Either cast a message to a traced message,
+   * or create a traced message with empty context as default.
+   */
+  def apply(message: Any): TracedMessage = {
+    message match {
+      case traced: TracedMessage ⇒ traced
+      case msg                   ⇒ TracedMessage(msg, Tracer.emptyContext)
+    }
+  }
+
+  /**
+   * Returns the actual message from unwrapping a traced message.
+   */
+  def unwrap(message: Any): Any = {
+    message match {
+      case traced: TracedMessage ⇒ traced.message
+      case msg                   ⇒ msg
+    }
+  }
+
+  /**
+   * Returns the actual message from unwrapping a traced message,
+   * but only tries to unwrap if a tracer is attached.
+   */
+  def unwrap(system: ExtendedActorSystem, message: Any): Any =
+    if (system.hasTracer) unwrap(message) else message
+}
+
+/**
  * Default implementation of Tracer that does nothing. Final methods.
  */
 final class NoTracer extends Tracer {

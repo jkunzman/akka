@@ -23,7 +23,6 @@ message RemoteEnvelope {
   required SerializedMessage message = 2;
   optional ActorRefData sender = 4;
   optional fixed64 seq = 5;
-  optional bytes traceContext = 6;
 }
 
 message AcknowledgementInfo {
@@ -46,6 +45,14 @@ message SerializedMessage {
   required bytes message = 1;
   required int32 serializerId = 2;
   optional bytes messageManifest = 3;
+}
+
+/**
+ * Trace envelope for adding trace context.
+ */
+message TraceEnvelope {
+  required SerializedMessage message = 1;
+  required bytes context = 2;
 }
 
 /**

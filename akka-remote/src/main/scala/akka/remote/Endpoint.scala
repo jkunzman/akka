@@ -18,6 +18,7 @@ import akka.remote.transport.AssociationHandle.{ DisassociateInfo, ActorHandleEv
 import akka.remote.transport.Transport.InvalidAssociationException
 import akka.remote.transport._
 import akka.serialization.Serialization
+import akka.trace.TracedMessage
 import akka.util.ByteString
 import akka.{ OnlyCauseStackTrace, AkkaException }
 import java.io.NotSerializableException
@@ -33,7 +34,6 @@ private[remote] trait InboundMessageDispatcher {
   def dispatch(recipient: InternalActorRef,
                recipientAddress: Address,
                serializedMessage: SerializedMessage,
-               serializedContext: ByteString,
                senderOption: Option[ActorRef]): Unit
 }
 
@@ -49,23 +49,29 @@ private[remote] class DefaultMessageDispatcher(private val system: ExtendedActor
   override def dispatch(recipient: InternalActorRef,
                         recipientAddress: Address,
                         serializedMessage: SerializedMessage,
-                        serializedContext: ByteString,
                         senderOption: Option[ActorRef]): Unit = {
 
     import provider.remoteSettings._
 
-    lazy val payload: AnyRef = MessageSerializer.deserialize(system, serializedMessage)
-    def payloadClass: Class[_] = if (payload eq null) null else payload.getClass
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
+
+    lazy val payload: AnyRef = {
+      val message = MessageSerializer.deserialize(system, serializedMessage)
+      if (system.hasTracer) {
+        val traced = TracedMessage(message)
+        system.tracer.setContext(traced.context)
+        system.tracer.remoteMessageReceived(recipient, traced.message, serializedMessage.getSerializedSize, sender)
+        traced.messageRef
+      } else {
+        message
+      }
+    }
+
+    def payloadClass: Class[_] = if (payload eq null) null else payload.getClass
+
     val originalReceiver = recipient.path
 
     def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender]"
-
-    if (system.hasTracer) {
-      val context = system.tracer.deserializeContext(serializedContext)
-      system.tracer.setContext(context)
-      system.tracer.remoteMessageReceived(recipient, payload, serializedMessage.getSerializedSize, sender)
-    }
 
     recipient match {
 
@@ -337,11 +343,11 @@ private[remote] class ReliableDeliverySupervisor(
         // Resending will be triggered by the incoming GotUid message after the connection finished
         context.become(receive)
       } else context.become(idle)
-    case s @ Send(msg: SystemMessage, _, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
-    case s: Send                                  ⇒ context.system.deadLetters ! s
-    case EndpointWriter.FlushAndStop              ⇒ context.stop(self)
-    case EndpointWriter.StopReading(w)            ⇒ sender ! EndpointWriter.StoppedReading(w)
-    case _                                        ⇒ // Ignore
+    case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
+    case s: Send                               ⇒ context.system.deadLetters ! s
+    case EndpointWriter.FlushAndStop           ⇒ context.stop(self)
+    case EndpointWriter.StopReading(w)         ⇒ sender ! EndpointWriter.StoppedReading(w)
+    case _                                     ⇒ // Ignore
   }
 
   def idle: Receive = {
@@ -549,7 +555,7 @@ private[remote] class EndpointWriter(
   }
 
   when(Initializing) {
-    case Event(Send(msg, senderOption, recipient, traceContext, _), _) ⇒
+    case Event(Send(msg, senderOption, recipient, _), _) ⇒
       stash()
       stay()
     case Event(Status.Failure(e: InvalidAssociationException), _) ⇒
@@ -578,7 +584,7 @@ private[remote] class EndpointWriter(
   }
 
   when(Writing) {
-    case Event(s @ Send(msg, senderOption, recipient, traceContext, seqOption), _) ⇒
+    case Event(s @ Send(msg, senderOption, recipient, seqOption), _) ⇒
       try {
         handle match {
           case Some(h) ⇒
@@ -589,8 +595,6 @@ private[remote] class EndpointWriter(
 
             val serializedMessage = serializeMessage(msg)
 
-            val serializedContext = if (extendedSystem.hasTracer) extendedSystem.tracer.serializeContext(traceContext) else ByteString.empty
-
             if (extendedSystem.hasTracer)
               extendedSystem.tracer.remoteMessageSent(recipient, msg, serializedMessage.getSerializedSize, senderOption.getOrElse(extendedSystem.deadLetters))
 
@@ -599,7 +603,6 @@ private[remote] class EndpointWriter(
               recipient,
               serializedMessage,
               senderOption,
-              serializedContext,
               seqOption = seqOption,
               ackOption = lastAck)
 
@@ -809,7 +812,7 @@ private[remote] class EndpointReader(
           if (msg.reliableDeliveryEnabled) {
             ackedReceiveBuffer = ackedReceiveBuffer.receive(msg)
             deliverAndAck()
-          } else msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.serializedContext, msg.senderOption)
+          } else msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
 
         case None ⇒
       }
@@ -862,7 +865,7 @@ private[remote] class EndpointReader(
     // Notify writer that some messages can be acked
     context.parent ! OutboundAck(ack)
     deliver foreach { m ⇒
-      msgDispatch.dispatch(m.recipient, m.recipientAddress, m.serializedMessage, m.serializedContext, m.senderOption)
+      msgDispatch.dispatch(m.recipient, m.recipientAddress, m.serializedMessage, m.senderOption)
     }
   }
 

@@ -23,6 +23,7 @@ import akka.actor.ActorRef
 import akka.actor.ReceiveTimeout
 import akka.actor.Identify
 import akka.actor.ActorIdentity
+import akka.trace.TracedMessage
 
 /**
  * INTERNAL API
@@ -141,10 +142,21 @@ private[akka] class RoutedActorCell(
    * replies with [[akka.routing.RouterRoutees]].
    */
   override def sendMessage(envelope: Envelope): Unit = {
-    if (routerConfig.isManagementMessage(envelope.message))
-      super.sendMessage(envelope)
-    else
-      router.route(envelope.message, envelope.sender)
+    if (_system.hasTracer) {
+      val traced = TracedMessage(envelope.message)
+      if (routerConfig.isManagementMessage(traced.message)) {
+        super.sendMessage(envelope)
+      } else {
+        _system.tracer.setContext(traced.context)
+        router.route(traced.message, envelope.sender)
+        _system.tracer.clearContext()
+      }
+    } else {
+      if (routerConfig.isManagementMessage(envelope.message))
+        super.sendMessage(envelope)
+      else
+        router.route(envelope.message, envelope.sender)
+    }
   }
 
 }

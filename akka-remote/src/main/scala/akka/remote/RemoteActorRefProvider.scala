@@ -18,7 +18,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import com.typesafe.config.Config
 import akka.ConfigurationException
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.trace.Tracer
+import akka.trace.{ TracedMessage, Tracer }
 
 /**
  * INTERNAL API
@@ -82,11 +82,11 @@ private[akka] object RemoteActorRefProvider {
     import EndpointManager.Send
 
     override def !(message: Any)(implicit sender: ActorRef): Unit = message match {
-      case Send(m, senderOption, _, traceContext, seqOpt) ⇒
+      case Send(m, senderOption, _, seqOpt) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
         if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
-      case DeadLetter(Send(m, senderOption, recipient, Tracer.emptyContext, seqOpt), _, _) ⇒
+      case DeadLetter(Send(m, senderOption, recipient, seqOpt), _, _) ⇒
         // else ignore: it is a reliably delivered message that might be retried later, and it has not yet deserved
         // the dead letter status
         if (seqOpt.isEmpty) super.!(m)(senderOption.orNull)
@@ -475,17 +475,21 @@ private[akka] class RemoteActorRef private[akka] (
 
   def sendSystemMessage(message: SystemMessage): Unit =
     try {
-      remote.send(message, None, this, Tracer.emptyContext)
+      remote.send(message, None, this)
       provider.afterSendSystemMessage(message)
     } catch handleException
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     if (message == null) throw new InvalidMessageException("Message is null")
-    val context = if (remote.system.hasTracer) {
-      remote.system.tracer.actorTold(this, message, sender)
-      remote.system.tracer.getContext
-    } else Tracer.emptyContext
-    try remote.send(message, Option(sender), this, context) catch handleException
+    try {
+      if (remote.system.hasTracer) {
+        remote.system.tracer.actorTold(this, message, sender)
+        val context = remote.system.tracer.getContext
+        remote.send(TracedMessage(message, context), Option(sender), this)
+      } else {
+        remote.send(message, Option(sender), this)
+      }
+    } catch handleException
   }
 
   override def provider: RemoteActorRefProvider = remote.provider

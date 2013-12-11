@@ -17,6 +17,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NonFatal
 import akka.dispatch.MessageDispatcher
+import akka.trace.TracedMessage
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -266,7 +267,7 @@ private[akka] trait Cell {
       val senderRef = if (sender ne Actor.noSender) sender else system.deadLetters
       systemImpl.tracer.actorTold(self, message, senderRef)
       val context = systemImpl.tracer.getContext
-      sendMessage(Envelope(message, sender, system, context))
+      sendMessage(Envelope(TracedMessage(message, context), sender, system))
     } else {
       sendMessage(Envelope(message, sender, system))
     }
@@ -464,12 +465,13 @@ private[akka] class ActorCell(
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope): Unit = try {
     if (system.hasTracer) {
-      system.tracer.setContext(messageHandle.traceContext)
-      system.tracer.actorReceived(self, messageHandle.message, messageHandle.sender)
+      val traced = TracedMessage(messageHandle.message)
+      system.tracer.setContext(traced.context)
+      system.tracer.actorReceived(self, traced.message, messageHandle.sender)
     }
     currentMessage = messageHandle
     cancelReceiveTimeout() // FIXME: leave this here???
-    messageHandle.message match {
+    TracedMessage.unwrap(system, messageHandle.message) match {
       case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
       case msg                      ⇒ receiveMessage(msg)
     }
@@ -479,16 +481,22 @@ private[akka] class ActorCell(
   } finally {
     checkReceiveTimeout // Reschedule receive timeout
     if (system.hasTracer) {
-      system.tracer.actorCompleted(self, messageHandle.message, messageHandle.sender)
+      system.tracer.actorCompleted(self, TracedMessage.unwrap(messageHandle.message), messageHandle.sender)
       system.tracer.clearContext()
     }
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
-    if (system.settings.DebugAutoReceive)
-      publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
+    if (system.settings.DebugAutoReceive) {
+      if (system.hasTracer) {
+        val unwrapped = Envelope(TracedMessage.unwrap(msg.message), msg.sender, system)
+        publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + unwrapped))
+      } else {
+        publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
+      }
+    }
 
-    msg.message match {
+    TracedMessage.unwrap(system, msg.message) match {
       case t: Terminated              ⇒ receivedTerminated(t)
       case AddressTerminated(address) ⇒ addressTerminated(address)
       case Kill                       ⇒ throw new ActorKilledException("Kill")
