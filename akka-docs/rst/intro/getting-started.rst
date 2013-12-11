@@ -37,14 +37,8 @@ Akka is very modular and consists of several JARs containing different features.
 - ``akka-dataflow`` – add-on to SIP-14 futures supporting implicit
   continuation-passing style
 
-- ``akka-file-mailbox`` – Akka durable mailbox (find more among community
-  projects)
-
 - ``akka-kernel`` – Akka microkernel for running a bare-bones mini application
   server
-
-- ``akka-mailboxes-common`` – common infrastructure for implementing durable
-  mailboxes
 
 - ``akka-osgi`` – base bundle for using Akka in OSGi containers, containing the
   ``akka-actor`` classes

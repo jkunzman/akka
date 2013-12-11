@@ -578,8 +578,8 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test", channels,
-      remote % "compile;test->test", cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries,
+    dependencies = Seq(actor, testkit % "test->test", channels,
+      remote % "compile;test->test", cluster, slf4j, agent, dataflow, transactor, zeroMQ, camel, osgi, osgiAries,
       persistence % "compile;test->test"),
     settings = defaultSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",

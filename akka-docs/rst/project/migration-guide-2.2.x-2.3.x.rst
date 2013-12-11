@@ -99,3 +99,11 @@ Changed cluster expected-response-after configuration
 Configuration property ``akka.cluster.failure-detector.heartbeat-request.expected-response-after`` 
 has been renamed to ``akka.cluster.failure-detector.expected-response-after``.
  
+Durable Mailboxes are Deprecated
+================================
+
+Durable mailboxes are superseded by ``akka-persistence``, which offers several
+tools to support reliable messaging.
+
+Read more about ``akka-persistence`` in the :ref:`documentation for Scala <persistence-scala>` and 
+:ref:`documentation for Java <persistence-java>`.
