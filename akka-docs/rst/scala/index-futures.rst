@@ -6,6 +6,4 @@ Futures and Agents
 
    futures
    dataflow
-   stm
    agents
-   transactors

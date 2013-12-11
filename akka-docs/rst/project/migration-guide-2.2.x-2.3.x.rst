@@ -99,3 +99,9 @@ Changed cluster expected-response-after configuration
 Configuration property ``akka.cluster.failure-detector.heartbeat-request.expected-response-after`` 
 has been renamed to ``akka.cluster.failure-detector.expected-response-after``.
  
+Transactor Module is Deprecated
+===============================
+
+The integration between actors and STM in the module ``akka-transactor`` is deprecated and will be
+removed in a future version.
+
