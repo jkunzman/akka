@@ -31,6 +31,8 @@ object AkkaSpec {
             }
           }
         }
+        # run with empty tracer by default, to ensure tracing doesn't break anything
+        tracers = ["akka.trace.NoTracer"]
       }
                                                     """)
 
