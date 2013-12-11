@@ -279,7 +279,7 @@ object Status {
  * }}}
  */
 trait ActorLogging { this: Actor ⇒
-  val log = akka.event.Logging(context.system, this)
+  lazy val log = akka.event.Logging(context.system, this)
 }
 
 /**
